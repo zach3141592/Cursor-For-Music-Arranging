@@ -1,22 +1,6 @@
-# Easy Piano Arranger (AI-Powered)
+# AI Piano Arranger
 
-An intelligent piano sheet music simplification app built with Next.js, OpenAI API, and abcjs.
-
-## What this is
-
-- A Next.js web app that lets you paste ABC notation and generate simplified piano versions using AI or rule-based approaches
-- Powered by OpenAI GPT-4 for intelligent music simplification
-- Renders notation and provides playback using abcjs
-- Basic PDF upload placeholder (OMR not implemented)
-
-## Features
-
-- **AI-Powered Simplification**: Uses OpenAI GPT-4 to intelligently simplify complex piano music
-- **Rule-Based Fallback**: Traditional simplification rules when AI is disabled
-- **Real-time Rendering**: Instant visual feedback with abcjs notation rendering
-- **Audio Playback**: Play original and simplified versions
-- **Export**: Download simplified ABC files
-- **Customizable Settings**: Toggle different simplification approaches
+play any song you want
 
 ## Setup & Installation
 
@@ -46,25 +30,6 @@ An intelligent piano sheet music simplification app built with Next.js, OpenAI A
 
 4. **Open your browser**:
    Navigate to [http://localhost:3000](http://localhost:3000)
-
-## How to use
-
-1. **Input**: Paste ABC notation in the text area (demo tune is prefilled)
-2. **Settings**: Choose between AI-powered or rule-based simplification
-3. **Simplify**: Click "Simplify + Render" to process your music
-4. **Compare**: View original and simplified versions side by side
-5. **Play**: Use playback controls to hear both versions
-6. **Export**: Download the simplified ABC file
-
-## API Integration
-
-The app uses OpenAI's GPT-4 model to intelligently simplify music by:
-
-- Removing complex ornaments while preserving musical essence
-- Reducing chords to playable intervals
-- Simplifying rhythms for intermediate players
-- Maintaining key and structure
-- Preserving melody and form
 
 ## Technical Stack
 
