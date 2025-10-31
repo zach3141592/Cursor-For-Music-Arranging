@@ -280,8 +280,8 @@ export default function Home() {
   return (
     <>
       <header className="app-header">
-        <h1>Easy Piano Arranger (AI-Powered)</h1>
-        <p>Upload a PDF (placeholder) or paste ABC notation. Simplify with AI or rules-based approach using abcjs.</p>
+        <h1>Easy Piano Arranger</h1>
+        <p>Simplify piano sheet music with AI-powered tools</p>
       </header>
 
       <main className="container">
@@ -292,44 +292,38 @@ export default function Home() {
         )}
 
         <section className="panel">
-          <h2>1) Input</h2>
-          <div className="input-row">
-            <label htmlFor="pdf-input" className="label">Upload PDF (experimental)</label>
-            <input type="file" id="pdf-input" accept="application/pdf" />
-            <button className="btn" title="Runs an OMR placeholder">Process PDF (Placeholder)</button>
-            <small className="help">PDF-to-ABC OMR is not included. Use pasted ABC for full flow.</small>
-          </div>
-
+          <h2>Input</h2>
           <div className="input-col">
-            <label htmlFor="abc-input" className="label">Or paste ABC Notation</label>
+            <label htmlFor="abc-input" className="label">ABC Notation</label>
             <textarea 
               id="abc-input" 
-              rows={12} 
+              rows={10} 
               spellCheck={false}
               value={abcInput}
               onChange={(e) => setAbcInput(e.target.value)}
+              placeholder="Paste your ABC notation here..."
             />
             <div className="row gap">
               <button 
-                className="btn" 
+                className="btn btn-secondary" 
                 onClick={handleRenderOriginal}
                 disabled={isLoading}
               >
                 Render Original
               </button>
               <button 
-                className="btn btn-primary" 
+                className="btn" 
                 onClick={handleSimplifyAndRender}
                 disabled={isLoading}
               >
-                {isLoading ? 'Simplifying...' : 'Simplify + Render'}
+                {isLoading ? 'Simplifying...' : 'Simplify'}
               </button>
             </div>
           </div>
         </section>
 
         <section className="panel">
-          <h2>2) Simplification Settings</h2>
+          <h2>Settings</h2>
           <div className="settings-grid">
             <label className="switch">
               <input 
@@ -337,7 +331,7 @@ export default function Home() {
                 checked={settings.useAI}
                 onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
               />
-              <span>Use AI-powered simplification (OpenAI)</span>
+              <span>Use AI simplification</span>
             </label>
             <label className="switch">
               <input 
@@ -345,7 +339,7 @@ export default function Home() {
                 checked={settings.removeOrnaments}
                 onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
               />
-              <span>Remove ornaments (grace notes, trills, rolls)</span>
+              <span>Remove ornaments</span>
             </label>
             <label className="switch">
               <input 
@@ -353,7 +347,7 @@ export default function Home() {
                 checked={settings.reduceChords}
                 onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
               />
-              <span>Reduce chords to single note</span>
+              <span>Simplify chords</span>
             </label>
             <label className="switch">
               <input 
@@ -361,7 +355,7 @@ export default function Home() {
                 checked={settings.dropSecondaryVoices}
                 onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
               />
-              <span>Drop secondary voices</span>
+              <span>Single voice only</span>
             </label>
             <label className="switch">
               <input 
@@ -369,50 +363,40 @@ export default function Home() {
                 checked={settings.limitRhythm}
                 onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
               />
-              <span>Limit fast rhythms (floor to 1/8)</span>
-            </label>
-            <label className="switch">
-              <input 
-                type="checkbox" 
-                checked={settings.simplifyTies}
-                onChange={(e) => setSettings({...settings, simplifyTies: e.target.checked})}
-              />
-              <span>Simplify ties/slurs</span>
+              <span>Simplify rhythms</span>
             </label>
           </div>
         </section>
 
         <section className="panel">
-          <h2>3) Output</h2>
+          <h2>Output</h2>
           <div className="columns">
             <div className="col">
               <h3>Original</h3>
               <div ref={originalScoreRef} id="original-score"></div>
               <div className="row gap">
-                <button className="btn" onClick={handlePlayOriginal}>Play Original</button>
-                <button className="btn" onClick={handleStopOriginal}>Stop</button>
+                <button className="btn btn-secondary" onClick={handlePlayOriginal}>Play</button>
+                <button className="btn btn-secondary" onClick={handleStopOriginal}>Stop</button>
               </div>
             </div>
             <div className="col">
               <h3>Simplified</h3>
               <div ref={simplifiedScoreRef} id="simplified-score"></div>
               <div className="row gap">
-                <button className="btn" onClick={handlePlaySimplified}>Play Simplified</button>
-                <button className="btn" onClick={handleStopSimplified}>Stop</button>
+                <button className="btn btn-secondary" onClick={handlePlaySimplified}>Play</button>
+                <button className="btn btn-secondary" onClick={handleStopSimplified}>Stop</button>
               </div>
             </div>
           </div>
 
           <div className="export-row">
-            <button className="btn" onClick={handleDownloadSimplified}>Download Simplified .abc</button>
+            <button className="btn btn-secondary" onClick={handleDownloadSimplified}>Download ABC</button>
           </div>
         </section>
       </main>
 
       <footer className="app-footer">
-        <small>
-          Rendering powered by abcjs. AI-powered simplification with OpenAI. See docs: <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a>
-        </small>
+        Powered by <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a> and OpenAI
       </footer>
     </>
   )
