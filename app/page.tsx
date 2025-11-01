@@ -295,28 +295,29 @@ export default function Home() {
           <h2>Input</h2>
           <div className="input-row">
             <label htmlFor="pdf-input" className="label">Upload PDF</label>
-            <input 
-              type="file" 
-              id="pdf-input" 
-              accept="application/pdf" 
-              style={{ marginBottom: '8px' }}
-            />
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => {
-                const fileInput = document.getElementById('pdf-input') as HTMLInputElement
-                if (!fileInput?.files || fileInput.files.length === 0) {
-                  showStatus('error', 'Please select a PDF file first')
-                  return
-                }
-                showStatus('loading', 'PDF processing not yet implemented. Please paste ABC notation below.')
-              }}
-            >
-              Process PDF
-            </button>
+            <div className="file-upload-wrapper">
+              <input 
+                type="file" 
+                id="pdf-input" 
+                accept="application/pdf" 
+              />
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => {
+                  const fileInput = document.getElementById('pdf-input') as HTMLInputElement
+                  if (!fileInput?.files || fileInput.files.length === 0) {
+                    showStatus('error', 'Please select a PDF file first')
+                    return
+                  }
+                  showStatus('loading', 'PDF processing not yet implemented. Please paste ABC notation below.')
+                }}
+              >
+                Process PDF
+              </button>
+            </div>
             <small className="help">Note: PDF-to-ABC conversion requires OMR software. For now, paste ABC notation below.</small>
           </div>
-          <div className="input-col" style={{ marginTop: '20px' }}>
+          <div className="input-col">
             <label htmlFor="abc-input" className="label">ABC Notation</label>
             <textarea 
               id="abc-input" 
