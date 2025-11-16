@@ -29,7 +29,7 @@ export default function LandingPage() {
 
           <footer className="landing-footer">
             <p>
-              Powered by <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a> and OpenAI
+              Made with the help of <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a> notation converter
             </p>
           </footer>
         </main>
