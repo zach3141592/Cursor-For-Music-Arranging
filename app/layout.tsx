@@ -6,6 +6,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata = {
   title: 'Easy Piano Arranger',
   description: 'AI-powered piano sheet music simplification using OpenAI and abcjs',
+  icons: {
+    icon: '/logo.png',
+  },
 }
 
 export default function RootLayout({

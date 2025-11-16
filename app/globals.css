@@ -25,6 +25,13 @@ html, body {
   padding: 32px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-header .logo {
+  flex-shrink: 0;
 }
 
 .app-header h1 {
@@ -306,9 +313,16 @@ textarea:focus {
 
 .landing-header {
   margin-bottom: 60px;
-  border-bottom: 1px solid var(--border);
   padding-bottom: 40px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.landing-header .logo {
+  margin-bottom: 8px;
 }
 
 .landing-title {

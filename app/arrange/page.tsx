@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 
 declare global {
   interface Window {
@@ -280,8 +281,18 @@ export default function Home() {
   return (
     <>
       <header className="app-header">
-        <h1>Easy Piano Arranger</h1>
-        <p>Simplify piano sheet music with AI-powered tools</p>
+        <Image 
+          src="/logo.png" 
+          alt="Easy Piano Arranger Logo" 
+          width={60} 
+          height={60}
+          className="logo"
+          priority
+        />
+        <div>
+          <h1>Easy Piano Arranger</h1>
+          <p>Simplify piano sheet music with AI-powered tools</p>
+        </div>
       </header>
 
       <main className="container">
