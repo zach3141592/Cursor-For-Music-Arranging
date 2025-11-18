@@ -22,8 +22,8 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Inter', sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-playfair), 'Georgia', 'Times New Roman', 'Times', serif;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -194,9 +194,9 @@ textarea {
   border: 2px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.7;
+  font-family: var(--font-playfair), 'Georgia', 'Times New Roman', 'Times', serif;
+  font-size: 14px;
+  line-height: 1.8;
   resize: vertical;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-sm);
@@ -532,16 +532,6 @@ textarea::placeholder {
 .landing-header .logo {
   margin-bottom: 12px;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
 }
 
 .landing-title {
