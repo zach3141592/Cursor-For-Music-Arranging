@@ -596,6 +596,7 @@ textarea::placeholder {
   line-height: 1.05;
   color: var(--text);
   letter-spacing: 0.02em;
+  text-shadow: 4px 4px 0px var(--accent);
 }
 
 .landing-subtitle {

@@ -17,7 +17,7 @@ export default function LandingPage() {
             priority
           />
           <h1 className="landing-title">Easy Piano Arranger</h1>
-          <p className="landing-subtitle">Simplify complex piano sheet music using AI-powered technology</p>
+          <p className="landing-subtitle">Simplify complex piano sheet music using AI</p>
         </header>
 
         <main className="landing-main">
