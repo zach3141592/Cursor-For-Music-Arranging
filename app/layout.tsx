@@ -7,8 +7,8 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: 'Easy Piano Arranger',
-  description: 'AI-powered piano sheet music simplification using OpenAI and abcjs',
+  title: 'TuneForm AI',
+  description: 'AI-powered piano sheet music simplification',
   icons: {
     icon: '/logo.png',
   },
