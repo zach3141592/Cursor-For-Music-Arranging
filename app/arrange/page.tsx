@@ -281,7 +281,14 @@ export default function Home() {
   return (
     <>
       <header className="app-header">
-        <div className="logo-3d-small">TF</div>
+        <Image 
+          src="/logo.png" 
+          alt="TuneForm AI Logo" 
+          width={48} 
+          height={48}
+          className="logo-3d-image-small"
+          priority
+        />
         <div>
           <h1>TuneForm AI</h1>
           <p>Simplify piano sheet music with AI</p>
