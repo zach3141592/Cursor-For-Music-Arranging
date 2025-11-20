@@ -431,7 +431,7 @@ export default function Home() {
       </main>
 
       <footer className="app-footer">
-        Powered by <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a> and OpenAI
+        Powered by <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a>. Built by <a href="https://www.linkedin.com/in/zacharyyu/" target="_blank" rel="noreferrer noopener">Zachary Yu</a>
       </footer>
     </>
   )
