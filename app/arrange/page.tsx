@@ -281,14 +281,7 @@ export default function Home() {
   return (
     <>
       <header className="app-header">
-        <Image 
-          src="/logo.png" 
-          alt="Easy Piano Arranger Logo" 
-          width={60} 
-          height={60}
-          className="logo"
-          priority
-        />
+        <div className="logo-3d-small">TF</div>
         <div>
           <h1>TuneForm AI</h1>
           <p>Simplify piano sheet music with AI</p>

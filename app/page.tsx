@@ -8,14 +8,7 @@ export default function LandingPage() {
     <div className="landing-page">
       <div className="landing-container">
         <header className="landing-header">
-          <Image 
-            src="/logo.png" 
-            alt="Easy Piano Arranger Logo" 
-            width={80} 
-            height={80}
-            className="logo"
-            priority
-          />
+          <div className="logo-3d">TF</div>
           <h1 className="landing-title">TuneForm AI</h1>
           <p className="landing-subtitle">Simplify complex piano sheet music using AI</p>
         </header>
