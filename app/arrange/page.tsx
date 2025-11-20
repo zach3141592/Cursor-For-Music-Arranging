@@ -290,7 +290,7 @@ export default function Home() {
           priority
         />
         <div>
-          <h1>TuneForm AI</h1>
+          <h1>TunesForm AI</h1>
           <p>Simplify piano sheet music with AI</p>
         </div>
       </header>

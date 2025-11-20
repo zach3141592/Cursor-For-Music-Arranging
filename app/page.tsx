@@ -16,7 +16,7 @@ export default function LandingPage() {
             className="logo-3d-image"
             priority
           />
-          <h1 className="landing-title">TuneForm AI</h1>
+          <h1 className="landing-title">TunesForm AI</h1>
           <p className="landing-subtitle">Simplify complex piano sheet music using AI</p>
         </header>
 
