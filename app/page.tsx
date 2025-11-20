@@ -26,12 +26,6 @@ export default function LandingPage() {
               Get Started
             </Link>
           </div>
-
-          <footer className="landing-footer">
-            <p>
-              Made with the help of <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a> notation converter
-            </p>
-          </footer>
         </main>
       </div>
     </div>

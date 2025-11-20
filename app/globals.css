@@ -611,9 +611,9 @@ textarea::placeholder {
   font-family: 'Garamond', 'Georgia', serif;
   margin: 0 0 24px;
   line-height: 1.05;
-  color: var(--text);
+  color: var(--accent);
   letter-spacing: 0.02em;
-  text-shadow: 4px 4px 0px var(--accent);
+  text-shadow: 4px 4px 0px var(--border);
 }
 
 .landing-subtitle {
@@ -622,11 +622,16 @@ textarea::placeholder {
   font-style: italic;
   margin: 0;
   color: var(--text);
-  max-width: 600px;
+  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
   font-weight: 400;
   line-height: 1.4;
+  background: white;
+  border: 2px solid var(--border);
+  box-shadow: 4px 4px 0 var(--border);
+  padding: 16px 32px;
+  display: inline-block;
 }
 
 .landing-main {
@@ -695,28 +700,6 @@ textarea::placeholder {
   box-shadow: 12px 12px 0px var(--accent);
 }
 
-.landing-footer {
-  margin-top: auto;
-  padding-top: 32px;
-  border-top: 1px solid var(--border);
-  width: 100%;
-}
-
-.landing-footer p {
-  text-align: center;
-  color: var(--muted);
-  margin: 0;
-  font-size: 13px;
-}
-
-.landing-footer a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.landing-footer a:hover {
-  text-decoration: underline;
-}
 
 @media (max-width: 768px) {
   .landing-title {
