@@ -549,21 +549,6 @@ textarea::placeholder {
   position: relative;
 }
 
-.landing-page::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 500px;
-  height: 500px;
-  background: var(--accent);
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.15;
-  pointer-events: none;
-  z-index: 0;
-}
 
 .landing-container {
   width: 100%;
