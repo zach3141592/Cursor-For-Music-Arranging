@@ -279,160 +279,127 @@ export default function Home() {
   }
 
   return (
-    <>
-      <header className="app-header">
-        <Image 
-          src="/logo.png" 
-          alt="TuneForm AI Logo" 
-          width={48} 
-          height={48}
-          className="logo-3d-image-small"
-          priority
-        />
-        <div>
+    <div className="dashboard">
+      <header className="dashboard-header">
+        <div className="header-left">
+          <Image
+            src="/logo.png"
+            alt="TuneForm AI Logo"
+            width={32}
+            height={32}
+            className="dashboard-logo"
+            priority
+          />
           <h1>TunesForm AI</h1>
-          <p>Simplify piano sheet music with AI</p>
+        </div>
+        <div className="header-right">
+          <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a>
+          <span>•</span>
+          <a href="https://www.zacharyyu.com/" target="_blank" rel="noreferrer noopener">Zachary Yu</a>
         </div>
       </header>
 
-      <main className="container">
-        {status && (
-          <div className={`status ${status.type}`}>
-            {status.message}
-          </div>
-        )}
+      {status && (
+        <div className={`dashboard-status ${status.type}`}>
+          {status.message}
+        </div>
+      )}
 
-        <section className="panel">
-          <h2>Input</h2>
-          <div className="input-row">
-            <label htmlFor="pdf-input" className="label">Upload PDF</label>
-            <div className="file-upload-wrapper">
-              <input 
-                type="file" 
-                id="pdf-input" 
-                accept="application/pdf" 
-              />
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => {
-                  const fileInput = document.getElementById('pdf-input') as HTMLInputElement
-                  if (!fileInput?.files || fileInput.files.length === 0) {
-                    showStatus('error', 'Please select a PDF file first')
-                    return
-                  }
-                  showStatus('loading', 'PDF processing not yet implemented. Please paste ABC notation below.')
-                }}
-              >
-                Process PDF
-              </button>
-            </div>
-            <small className="help">Note: PDF-to-ABC conversion requires OMR software. For now, paste ABC notation below.</small>
-          </div>
-          <div className="input-col">
-            <label htmlFor="abc-input" className="label">ABC Notation</label>
-            <textarea 
-              id="abc-input" 
-              rows={10} 
-              spellCheck={false}
-              value={abcInput}
-              onChange={(e) => setAbcInput(e.target.value)}
-              placeholder="Paste your ABC notation here..."
-            />
-            <div className="row gap">
-              <button 
-                className="btn btn-secondary" 
+      <main className="dashboard-main">
+        <section className="dashboard-input">
+          <div className="section-header">
+            <h2>Input</h2>
+            <div className="input-actions">
+              <button
+                className="btn-sm"
                 onClick={handleRenderOriginal}
                 disabled={isLoading}
               >
-                Render Original
+                Render
               </button>
-              <button 
-                className="btn" 
+              <button
+                className="btn-sm btn-primary"
                 onClick={handleSimplifyAndRender}
                 disabled={isLoading}
               >
-                {isLoading ? 'Simplifying...' : 'Simplify'}
+                {isLoading ? 'Processing...' : 'Simplify'}
               </button>
             </div>
           </div>
-        </section>
-
-        <section className="panel">
-          <h2>Settings</h2>
-          <div className="settings-grid">
-            <label className="switch">
-              <input 
-                type="checkbox" 
+          <textarea
+            id="abc-input"
+            spellCheck={false}
+            value={abcInput}
+            onChange={(e) => setAbcInput(e.target.value)}
+            placeholder="Paste ABC notation here..."
+          />
+          <div className="settings-row">
+            <label className="setting">
+              <input
+                type="checkbox"
                 checked={settings.useAI}
                 onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
               />
-              <span>Use AI simplification</span>
+              <span>AI</span>
             </label>
-            <label className="switch">
-              <input 
-                type="checkbox" 
+            <label className="setting">
+              <input
+                type="checkbox"
                 checked={settings.removeOrnaments}
                 onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
               />
-              <span>Remove ornaments</span>
+              <span>No ornaments</span>
             </label>
-            <label className="switch">
-              <input 
-                type="checkbox" 
+            <label className="setting">
+              <input
+                type="checkbox"
                 checked={settings.reduceChords}
                 onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
               />
-              <span>Simplify chords</span>
+              <span>Simple chords</span>
             </label>
-            <label className="switch">
-              <input 
-                type="checkbox" 
+            <label className="setting">
+              <input
+                type="checkbox"
                 checked={settings.dropSecondaryVoices}
                 onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
               />
-              <span>Single voice only</span>
+              <span>Single voice</span>
             </label>
-            <label className="switch">
-              <input 
-                type="checkbox" 
+            <label className="setting">
+              <input
+                type="checkbox"
                 checked={settings.limitRhythm}
                 onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
               />
-              <span>Simplify rhythms</span>
+              <span>Simple rhythm</span>
             </label>
           </div>
         </section>
 
-        <section className="panel">
-          <h2>Output</h2>
-          <div className="columns">
-            <div className="col">
-              <h3>Original</h3>
-              <div ref={originalScoreRef} id="original-score"></div>
-              <div className="row gap">
-                <button className="btn btn-secondary" onClick={handlePlayOriginal}>Play</button>
-                <button className="btn btn-secondary" onClick={handleStopOriginal}>Stop</button>
-              </div>
-            </div>
-            <div className="col">
-              <h3>Simplified</h3>
-              <div ref={simplifiedScoreRef} id="simplified-score"></div>
-              <div className="row gap">
-                <button className="btn btn-secondary" onClick={handlePlaySimplified}>Play</button>
-                <button className="btn btn-secondary" onClick={handleStopSimplified}>Stop</button>
-              </div>
+        <section className="dashboard-score">
+          <div className="section-header">
+            <h2>Original</h2>
+            <div className="score-actions">
+              <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
+              <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
             </div>
           </div>
+          <div ref={originalScoreRef} className="score-container"></div>
+        </section>
 
-          <div className="export-row">
-            <button className="btn btn-secondary" onClick={handleDownloadSimplified}>Download ABC</button>
+        <section className="dashboard-score">
+          <div className="section-header">
+            <h2>Simplified</h2>
+            <div className="score-actions">
+              <button className="btn-icon" onClick={handlePlaySimplified} title="Play">▶</button>
+              <button className="btn-icon" onClick={handleStopSimplified} title="Stop">■</button>
+              <button className="btn-icon" onClick={handleDownloadSimplified} title="Download">↓</button>
+            </div>
           </div>
+          <div ref={simplifiedScoreRef} className="score-container"></div>
         </section>
       </main>
-
-      <footer className="app-footer">
-        Powered by <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a>. Built by <a href="https://www.zacharyyu.com/" target="_blank" rel="noreferrer noopener">Zachary Yu</a>
-      </footer>
-    </>
+    </div>
   )
 }
