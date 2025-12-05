@@ -29,9 +29,7 @@ export default function LandingPage() {
         </main>
 
         <footer className="landing-footer">
-          <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a>
-          <span>•</span>
-          <a href="https://www.zacharyyu.com/" target="_blank" rel="noreferrer noopener">Zachary Yu</a>
+          Made by <a href="https://www.zacharyyu.com/" target="_blank" rel="noreferrer noopener">Zachary Yu</a>
         </footer>
       </div>
     </div>
