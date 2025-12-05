@@ -346,28 +346,26 @@ export default function Home() {
           <section className="notation-panel">
             <div className="panel-header">
               <h2>SOURCE_CODE // ABC</h2>
-            </div>
-            <button
-              className="btn-upload-full"
-              onClick={handleUploadClick}
-              disabled={isUploading}
-            >
-              <div className="upload-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <button
+                className="btn-header-upload"
+                onClick={handleUploadClick}
+                disabled={isUploading}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="17 8 12 3 7 8"/>
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
-              </div>
-              <span>{isUploading ? 'ANALYZING...' : 'UPLOAD SHEET MUSIC'}</span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,application/pdf"
-              onChange={handleFileUpload}
-              style={{ display: 'none' }}
-            />
+                <span>{isUploading ? 'ANALYZING...' : 'UPLOAD'}</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,application/pdf"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+            </div>
             <textarea
               id="abc-input"
               className="abc-editor"
