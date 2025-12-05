@@ -439,7 +439,7 @@ export default function Home() {
               chatMessages.map((msg, i) => (
                 <div key={i} className={`chat-message ${msg.role}`}>
                   <div className="chat-message-label">
-                    {msg.role === 'user' ? 'YOU' : 'AI'}
+                    {msg.role === 'user' ? 'YOU' : 'TUNESFORM AI'}
                   </div>
                   <div className="chat-message-content">{msg.content}</div>
                 </div>
@@ -447,7 +447,7 @@ export default function Home() {
             )}
             {isChatLoading && (
               <div className="chat-message assistant">
-                <div className="chat-message-label">AI</div>
+                <div className="chat-message-label">TUNESFORM AI</div>
                 <div className="chat-message-content chat-loading">
                   <span className="loading-dot">.</span>
                   <span className="loading-dot">.</span>
