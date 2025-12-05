@@ -17,7 +17,7 @@ export default function LandingPage() {
             priority
           />
           <h1 className="landing-title">TunesForm AI</h1>
-          <p className="landing-subtitle">Simplify complex piano sheet music using AI</p>
+          <p className="landing-subtitle">Make lead sheets with AI</p>
         </header>
 
         <main className="landing-main">
