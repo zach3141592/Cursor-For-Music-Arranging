@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { preprocessImage, quickQualityCheck, type QualityReport } from '../lib/imagePreprocessing'
 
 declare global {
   interface Window {
@@ -28,6 +29,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [imageQuality, setImageQuality] = useState<QualityReport | null>(null)
+  const [processingInfo, setProcessingInfo] = useState<string[]>([])
   const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading', message: string} | null>(null)
   const [settings, setSettings] = useState({
     removeOrnaments: true,
@@ -113,7 +116,7 @@ export default function Home() {
     
     if (options.reduceChords) {
       // For chords like [CEG]n? -> keep first note only
-      out = out.replace(/\[([^\]]+)\](\d*\/?\d*)/g, (m, inside, dur) => {
+      out = out.replace(/\[([^\]]+)\](\d*\/?\d*)/g, (_match, inside, dur) => {
         const first = inside.trim().split(/\s+/)[0] || ''
         return first + (dur || '')
       })
@@ -293,26 +296,47 @@ export default function Home() {
     }
 
     setIsUploading(true)
-    showStatus('loading', 'Reading sheet music from image...')
+    setImageQuality(null)
+    setProcessingInfo([])
+    showStatus('loading', 'Analyzing image quality...')
 
     try {
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
+      // Convert file to data URL
+      const originalDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = () => {
-          const result = reader.result as string
-          // Remove the data URL prefix to get just the base64 data
-          const base64Data = result.split(',')[1]
-          resolve(base64Data)
-        }
+        reader.onload = () => resolve(reader.result as string)
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
 
-      // Store the image for preview
-      setUploadedImage(`data:${file.type};base64,${base64}`)
+      // Quick quality check first
+      showStatus('loading', 'Checking image quality...')
+      const qualityCheck = await quickQualityCheck(originalDataUrl)
+      setImageQuality(qualityCheck)
 
-      // Send to API
+      // Preprocess the image (resize, enhance contrast)
+      showStatus('loading', 'Optimizing image for recognition...')
+      const preprocessResult = await preprocessImage(originalDataUrl, {
+        maxDimension: 2048,
+        enhanceContrast: true,
+        contrastFactor: 1.3
+      })
+
+      setProcessingInfo(preprocessResult.processingApplied)
+      setUploadedImage(preprocessResult.processedDataUrl)
+
+      // Extract base64 from processed data URL
+      const base64 = preprocessResult.processedDataUrl.split(',')[1]
+      const mimeType = preprocessResult.processedDataUrl.split(';')[0].split(':')[1]
+
+      // Show quality warnings if any
+      if (qualityCheck.warnings.length > 0) {
+        console.log('Quality warnings:', qualityCheck.warnings)
+      }
+
+      // Send to API with two-pass verification
+      showStatus('loading', 'AI is reading the sheet music (Pass 1 of 2)...')
+
       const response = await fetch('/api/read-music', {
         method: 'POST',
         headers: {
@@ -320,7 +344,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           image: base64,
-          mimeType: file.type
+          mimeType: mimeType
         }),
       })
 
@@ -336,7 +360,13 @@ export default function Home() {
         setTimeout(() => {
           renderAbc(originalScoreRef.current, data.abc)
         }, 100)
-        showStatus('success', 'Sheet music read successfully! ABC notation generated.')
+
+        // Build success message with details
+        let successMsg = 'Sheet music converted to ABC notation!'
+        if (data.fixes && data.fixes.length > 0) {
+          successMsg += ` (${data.fixes.length} auto-corrections applied)`
+        }
+        showStatus('success', successMsg)
       } else {
         throw new Error('No ABC notation returned')
       }
@@ -358,6 +388,8 @@ export default function Home() {
 
   const clearUploadedImage = () => {
     setUploadedImage(null)
+    setImageQuality(null)
+    setProcessingInfo([])
   }
 
   return (
@@ -388,20 +420,17 @@ export default function Home() {
       )}
 
       <main className="dashboard-main">
-        <section className="dashboard-input">
-          <div className="input-header">
-            <h2>Input</h2>
-            <p className="input-subtitle">Upload sheet music or paste ABC notation</p>
-          </div>
-
-          <div className="input-actions-bar">
+        {/* Left Sidebar - Settings */}
+        <aside className="sidebar">
+          <div className="sidebar-section">
+            <h3 className="sidebar-title">Upload</h3>
             <button
-              className="btn-action btn-upload"
+              className="btn-upload-full"
               onClick={handleUploadClick}
               disabled={isUploading || isLoading}
             >
-              <span className="btn-icon-left">+</span>
-              {isUploading ? 'Reading...' : 'Upload'}
+              <span className="upload-icon">+</span>
+              <span>{isUploading ? 'Reading...' : 'Upload Sheet Music'}</span>
             </button>
             <input
               ref={fileInputRef}
@@ -410,15 +439,87 @@ export default function Home() {
               onChange={handleFileUpload}
               style={{ display: 'none' }}
             />
+            {uploadedImage && (
+              <div className="sidebar-preview">
+                <div className="preview-header">
+                  <span>Preview</span>
+                  <button className="btn-icon btn-close" onClick={clearUploadedImage} title="Clear">×</button>
+                </div>
+                <img src={uploadedImage} alt="Uploaded sheet music" />
+                {imageQuality && imageQuality.warnings.length > 0 && (
+                  <div className="quality-warnings-compact">
+                    {imageQuality.warnings.map((warning, i) => (
+                      <div key={i} className="warning-item-small">⚠️ {warning}</div>
+                    ))}
+                  </div>
+                )}
+                {processingInfo.length > 0 && (
+                  <div className="processing-info-compact">
+                    {processingInfo.map((info, i) => (
+                      <div key={i} className="info-item-small">✓ {info}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="sidebar-section">
+            <h3 className="sidebar-title">Simplification Options</h3>
+            <div className="settings-list">
+              <label className="setting-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.useAI}
+                  onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
+                />
+                <span className="toggle-label">Use AI (GPT-4)</span>
+              </label>
+              <label className="setting-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.removeOrnaments}
+                  onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
+                />
+                <span className="toggle-label">Remove Ornaments</span>
+              </label>
+              <label className="setting-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.reduceChords}
+                  onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
+                />
+                <span className="toggle-label">Simplify Chords</span>
+              </label>
+              <label className="setting-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.dropSecondaryVoices}
+                  onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
+                />
+                <span className="toggle-label">Single Voice Only</span>
+              </label>
+              <label className="setting-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.limitRhythm}
+                  onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
+                />
+                <span className="toggle-label">Simplify Rhythm</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="sidebar-section sidebar-actions">
             <button
-              className="btn-action"
+              className="btn-sidebar btn-render"
               onClick={handleRenderOriginal}
               disabled={isLoading || isUploading}
             >
-              Render
+              Render ABC
             </button>
             <button
-              className="btn-action btn-primary"
+              className="btn-sidebar btn-simplify"
               onClick={handleSimplifyAndRender}
               disabled={isLoading || isUploading}
             >
@@ -426,120 +527,70 @@ export default function Home() {
             </button>
           </div>
 
-          {uploadedImage && (
-            <div className="uploaded-image-preview">
-              <div className="preview-header">
-                <span>Uploaded Sheet Music</span>
-                <button className="btn-icon btn-close" onClick={clearUploadedImage} title="Clear">×</button>
+          <div className="sidebar-section">
+            <h3 className="sidebar-title">Playback</h3>
+            <div className="playback-controls">
+              <div className="playback-row">
+                <span>Original</span>
+                <div className="playback-buttons">
+                  <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
+                  <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
+                </div>
               </div>
-              <img src={uploadedImage} alt="Uploaded sheet music" />
-            </div>
-          )}
-
-          <textarea
-            id="abc-input"
-            spellCheck={false}
-            value={abcInput}
-            onChange={(e) => setAbcInput(e.target.value)}
-            placeholder="X:1&#10;T:Title&#10;M:4/4&#10;K:C&#10;..."
-          />
-
-          <div className="settings-panel">
-            <div className="settings-title">Simplification Options</div>
-            <div className="settings-grid-modern">
-              <label className="setting-item">
-                <input
-                  type="checkbox"
-                  checked={settings.useAI}
-                  onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
-                />
-                <div className="setting-content">
-                  <span className="setting-label">Use AI</span>
-                  <span className="setting-desc">GPT-4 powered</span>
+              <div className="playback-row">
+                <span>Simplified</span>
+                <div className="playback-buttons">
+                  <button className="btn-icon" onClick={handlePlaySimplified} title="Play">▶</button>
+                  <button className="btn-icon" onClick={handleStopSimplified} title="Stop">■</button>
+                  <button className="btn-icon" onClick={handleDownloadSimplified} title="Download">↓</button>
                 </div>
-              </label>
-              <label className="setting-item">
-                <input
-                  type="checkbox"
-                  checked={settings.removeOrnaments}
-                  onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
-                />
-                <div className="setting-content">
-                  <span className="setting-label">No Ornaments</span>
-                  <span className="setting-desc">Remove trills</span>
-                </div>
-              </label>
-              <label className="setting-item">
-                <input
-                  type="checkbox"
-                  checked={settings.reduceChords}
-                  onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
-                />
-                <div className="setting-content">
-                  <span className="setting-label">Simple Chords</span>
-                  <span className="setting-desc">Reduce notes</span>
-                </div>
-              </label>
-              <label className="setting-item">
-                <input
-                  type="checkbox"
-                  checked={settings.dropSecondaryVoices}
-                  onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
-                />
-                <div className="setting-content">
-                  <span className="setting-label">Single Voice</span>
-                  <span className="setting-desc">Melody only</span>
-                </div>
-              </label>
-              <label className="setting-item">
-                <input
-                  type="checkbox"
-                  checked={settings.limitRhythm}
-                  onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
-                />
-                <div className="setting-content">
-                  <span className="setting-label">Simple Rhythm</span>
-                  <span className="setting-desc">Slower notes</span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section className="dashboard-score">
-          <div className="section-header">
-            <h2>Original</h2>
-            <div className="score-actions">
-              <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
-              <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
-            </div>
-          </div>
-          <div ref={originalScoreRef} className="score-container">
-            {!abcInput && !uploadedImage && (
-              <div className="empty-state">
-                <p>Enter ABC notation or upload sheet music to see the score here</p>
               </div>
-            )}
-          </div>
-        </section>
-
-        <section className="dashboard-score">
-          <div className="section-header">
-            <h2>Simplified</h2>
-            <div className="score-actions">
-              <button className="btn-icon" onClick={handlePlaySimplified} title="Play">▶</button>
-              <button className="btn-icon" onClick={handleStopSimplified} title="Stop">■</button>
-              <button className="btn-icon" onClick={handleDownloadSimplified} title="Download">↓</button>
             </div>
           </div>
-          <div ref={simplifiedScoreRef} className="score-container">
-            {!simplifiedAbc && (
-              <div className="empty-state">
-                <p>Click "Simplify" to generate an easier version</p>
+        </aside>
+
+        {/* Main Content Area - Split View */}
+        <div className="content-area">
+          {/* ABC Notation Panel */}
+          <section className="notation-panel">
+            <div className="panel-header">
+              <h2>ABC Notation</h2>
+            </div>
+            <textarea
+              id="abc-input"
+              className="abc-editor"
+              spellCheck={false}
+              value={abcInput}
+              onChange={(e) => setAbcInput(e.target.value)}
+              placeholder="X:1&#10;T:Title&#10;M:4/4&#10;L:1/8&#10;K:C&#10;CDEF GABc |"
+            />
+          </section>
+
+          {/* Rendered Sheet Music Panel */}
+          <section className="sheet-music-panel">
+            <div className="panel-header">
+              <h2>Sheet Music</h2>
+              <div className="panel-tabs">
+                <button className="tab-btn active">Original</button>
               </div>
-            )}
-          </div>
-        </section>
+            </div>
+            <div className="sheet-music-container">
+              <div ref={originalScoreRef} className="score-render">
+                {!abcInput && (
+                  <div className="empty-state">
+                    <p>Upload an image or enter ABC notation, then click "Render ABC"</p>
+                  </div>
+                )}
+              </div>
+              {simplifiedAbc && (
+                <div className="simplified-section">
+                  <h3>Simplified Version</h3>
+                  <div ref={simplifiedScoreRef} className="score-render"></div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   )
