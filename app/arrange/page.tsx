@@ -128,17 +128,6 @@ export default function Home() {
     }
   }
 
-  const handleDownloadAbc = () => {
-    const data = abcInput
-    const blob = new Blob([data], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'lead-sheet.abc'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleDownloadPdf = () => {
     if (!originalScoreRef.current) return
     const svg = originalScoreRef.current.querySelector('svg')
@@ -380,6 +369,24 @@ export default function Home() {
           <section className="sheet-music-panel">
             <div className="panel-header">
               <h2>VISUAL_RENDER // SCORE</h2>
+              <div className="header-controls">
+                <div className="playback-buttons">
+                  <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
+                  <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
+                </div>
+                <button
+                  className="btn-header-upload"
+                  onClick={handleDownloadPdf}
+                  disabled={isUploading}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>PDF</span>
+                </button>
+              </div>
             </div>
             <div className="sheet-music-container">
               <div ref={originalScoreRef} className="score-render">
@@ -419,26 +426,6 @@ export default function Home() {
               </div>
             )}
 
-            <div className="sidebar-actions">
-              <button
-                className="btn-sidebar btn-simplify"
-                onClick={handleDownloadPdf}
-                disabled={isUploading}
-              >
-                DOWNLOAD PDF
-              </button>
-            </div>
-
-            <div className="playback-controls">
-              <div className="playback-row">
-                <span>PLAYBACK</span>
-                <div className="playback-buttons">
-                  <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
-                  <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
-                  <button className="btn-icon" onClick={handleDownloadAbc} title="Download ABC">↓</button>
-                </div>
-              </div>
-            </div>
           </div>
         </aside>
       </main>
