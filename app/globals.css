@@ -817,6 +817,27 @@ textarea#abc-input:focus {
   margin-bottom: 40px;
 }
 
+.landing-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.landing-footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.landing-footer a:hover {
+  color: var(--accent);
+}
+
 .btn-large {
   padding: 16px 48px;
   font-size: 18px;

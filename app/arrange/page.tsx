@@ -406,11 +406,6 @@ export default function Home() {
           />
           <h1>TunesForm AI</h1>
         </div>
-        <div className="header-right">
-          <a href="https://www.abcjs.net/" target="_blank" rel="noreferrer noopener">abcjs</a>
-          <span>•</span>
-          <a href="https://www.zacharyyu.com/" target="_blank" rel="noreferrer noopener">Zachary Yu</a>
-        </div>
       </header>
 
       {status && (
