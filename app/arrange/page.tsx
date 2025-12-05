@@ -406,10 +406,17 @@ export default function Home() {
           />
           <h1>TunesForm AI</h1>
         </div>
+        <div className="header-right">
+          <div className="system-status">
+            <div className="status-dot"></div>
+            <span>SYSTEM READY</span>
+          </div>
+        </div>
       </header>
 
       {status && (
         <div className={`dashboard-status ${status.type}`}>
+          {status.type === 'loading' && <span className="animate-spin mr-2">⟳</span>}
           {status.message}
         </div>
       )}
@@ -418,14 +425,20 @@ export default function Home() {
         {/* Left Sidebar - Settings */}
         <aside className="sidebar">
           <div className="sidebar-section">
-            <h3 className="sidebar-title">Upload</h3>
+            <h3 className="sidebar-title">DATA_INPUT //</h3>
             <button
               className="btn-upload-full"
               onClick={handleUploadClick}
               disabled={isUploading || isLoading}
             >
-              <span className="upload-icon">+</span>
-              <span>{isUploading ? 'Reading...' : 'Upload Sheet Music'}</span>
+              <div className="upload-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <span>{isUploading ? 'ANALYZING INPUT...' : 'UPLOAD SHEET MUSIC'}</span>
             </button>
             <input
               ref={fileInputRef}
@@ -437,22 +450,21 @@ export default function Home() {
             {uploadedImage && (
               <div className="sidebar-preview">
                 <div className="preview-header">
-                  <span>Preview</span>
+                  <span>INPUT_PREVIEW</span>
                   <button className="btn-icon btn-close" onClick={clearUploadedImage} title="Clear">×</button>
                 </div>
                 <img src={uploadedImage} alt="Uploaded sheet music" />
-                {imageQuality && imageQuality.warnings.length > 0 && (
-                  <div className="quality-warnings-compact">
-                    {imageQuality.warnings.map((warning, i) => (
-                      <div key={i} className="warning-item-small">⚠️ {warning}</div>
+                
+                {(processingInfo.length > 0 || (imageQuality && imageQuality.warnings.length > 0)) && (
+                  <div className="processing-terminal">
+                    <div className="terminal-line">System diagnostic...</div>
+                    {imageQuality?.warnings.map((warning, i) => (
+                      <div key={`warn-${i}`} className="terminal-line" style={{ color: 'var(--warning)' }}>WARN: {warning}</div>
                     ))}
-                  </div>
-                )}
-                {processingInfo.length > 0 && (
-                  <div className="processing-info-compact">
                     {processingInfo.map((info, i) => (
-                      <div key={i} className="info-item-small">✓ {info}</div>
+                      <div key={`proc-${i}`} className="terminal-line">EXEC: {info}</div>
                     ))}
+                    <div className="terminal-line">Ready for processing.</div>
                   </div>
                 )}
               </div>
@@ -460,47 +472,47 @@ export default function Home() {
           </div>
 
           <div className="sidebar-section">
-            <h3 className="sidebar-title">Simplification Options</h3>
+            <h3 className="sidebar-title">PROCESSING_PARAMETERS //</h3>
             <div className="settings-list">
               <label className="setting-toggle">
+                <span className="toggle-label">AI_ENHANCEMENT (GPT-4)</span>
                 <input
                   type="checkbox"
                   checked={settings.useAI}
                   onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
                 />
-                <span className="toggle-label">Use AI (GPT-4)</span>
               </label>
               <label className="setting-toggle">
+                <span className="toggle-label">REMOVE_ORNAMENTS</span>
                 <input
                   type="checkbox"
                   checked={settings.removeOrnaments}
                   onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
                 />
-                <span className="toggle-label">Remove Ornaments</span>
               </label>
               <label className="setting-toggle">
+                <span className="toggle-label">SIMPLIFY_CHORDS</span>
                 <input
                   type="checkbox"
                   checked={settings.reduceChords}
                   onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
                 />
-                <span className="toggle-label">Simplify Chords</span>
               </label>
               <label className="setting-toggle">
+                <span className="toggle-label">SINGLE_VOICE_MODE</span>
                 <input
                   type="checkbox"
                   checked={settings.dropSecondaryVoices}
                   onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
                 />
-                <span className="toggle-label">Single Voice Only</span>
               </label>
               <label className="setting-toggle">
+                <span className="toggle-label">RHYTHM_QUANTIZATION</span>
                 <input
                   type="checkbox"
                   checked={settings.limitRhythm}
                   onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
                 />
-                <span className="toggle-label">Simplify Rhythm</span>
               </label>
             </div>
           </div>
@@ -511,29 +523,29 @@ export default function Home() {
               onClick={handleRenderOriginal}
               disabled={isLoading || isUploading}
             >
-              Render ABC
+              RENDER SOURCE
             </button>
             <button
               className="btn-sidebar btn-simplify"
               onClick={handleSimplifyAndRender}
               disabled={isLoading || isUploading}
             >
-              {isLoading ? 'Processing...' : 'Simplify'}
+              {isLoading ? 'PROCESSING...' : 'EXECUTE SIMPLIFICATION'}
             </button>
           </div>
 
           <div className="sidebar-section">
-            <h3 className="sidebar-title">Playback</h3>
+            <h3 className="sidebar-title">AUDIO_OUTPUT //</h3>
             <div className="playback-controls">
               <div className="playback-row">
-                <span>Original</span>
+                <span>ORIGINAL_SOURCE</span>
                 <div className="playback-buttons">
                   <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
                   <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
                 </div>
               </div>
               <div className="playback-row">
-                <span>Simplified</span>
+                <span>PROCESSED_OUTPUT</span>
                 <div className="playback-buttons">
                   <button className="btn-icon" onClick={handlePlaySimplified} title="Play">▶</button>
                   <button className="btn-icon" onClick={handleStopSimplified} title="Stop">■</button>
@@ -549,7 +561,7 @@ export default function Home() {
           {/* ABC Notation Panel */}
           <section className="notation-panel">
             <div className="panel-header">
-              <h2>ABC Notation</h2>
+              <h2>SOURCE_CODE // ABC</h2>
             </div>
             <textarea
               id="abc-input"
@@ -564,22 +576,19 @@ export default function Home() {
           {/* Rendered Sheet Music Panel */}
           <section className="sheet-music-panel">
             <div className="panel-header">
-              <h2>Sheet Music</h2>
-              <div className="panel-tabs">
-                <button className="tab-btn active">Original</button>
-              </div>
+              <h2>VISUAL_RENDER // SCORE</h2>
             </div>
             <div className="sheet-music-container">
               <div ref={originalScoreRef} className="score-render">
                 {!abcInput && (
                   <div className="empty-state">
-                    <p>Upload an image or enter ABC notation, then click "Render ABC"</p>
+                    <p>AWAITING INPUT SEQUENCE...</p>
                   </div>
                 )}
               </div>
               {simplifiedAbc && (
                 <div className="simplified-section">
-                  <h3>Simplified Version</h3>
+                  <h3>PROCESSED_OUTPUT_v1.0</h3>
                   <div ref={simplifiedScoreRef} className="score-render"></div>
                 </div>
               )}
