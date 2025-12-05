@@ -186,9 +186,9 @@ export default function Home() {
         finalWidth = finalHeight * imgAspect
       }
 
-      // Center on page
+      // Position at top of page, centered horizontally
       const x = (pageWidth - finalWidth) / 2
-      const y = (pageHeight - finalHeight) / 2
+      const y = margin
 
       pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight)
       pdf.save('lead-sheet.pdf')
