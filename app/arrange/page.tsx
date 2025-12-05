@@ -25,26 +25,14 @@ V:2
 
 export default function Home() {
   const [abcInput, setAbcInput] = useState(defaultABC)
-  const [simplifiedAbc, setSimplifiedAbc] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [imageQuality, setImageQuality] = useState<QualityReport | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string[]>([])
   const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading', message: string} | null>(null)
-  const [settings, setSettings] = useState({
-    removeOrnaments: true,
-    reduceChords: true,
-    dropSecondaryVoices: true,
-    limitRhythm: true,
-    simplifyTies: false,
-    useAI: true
-  })
 
   const originalScoreRef = useRef<HTMLDivElement>(null)
-  const simplifiedScoreRef = useRef<HTMLDivElement>(null)
   const originalSynthControlRef = useRef<any>(null)
-  const simplifiedSynthControlRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -79,135 +67,11 @@ export default function Home() {
     }
   }
 
-  const simplifyWithAI = async (abcText: string) => {
-    try {
-      const response = await fetch('/api/simplify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          abc: abcText,
-          settings: settings
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return data.simplifiedAbc
-    } catch (error) {
-      console.error('AI simplification error:', error)
-      throw error
-    }
-  }
-
-  const simplifyAbc = (abc: string, options: typeof settings) => {
-    let out = abc
-    
-    if (options.removeOrnaments) {
-      // Remove grace note blocks {..}
-      out = out.replace(/\{[^}]*\}/g, '')
-      // Remove simple trill/roll annotations
-      out = out.replace(/~|trill/g, '')
-    }
-    
-    if (options.reduceChords) {
-      // For chords like [CEG]n? -> keep first note only
-      out = out.replace(/\[([^\]]+)\](\d*\/?\d*)/g, (_match, inside, dur) => {
-        const first = inside.trim().split(/\s+/)[0] || ''
-        return first + (dur || '')
-      })
-    }
-    
-    if (options.dropSecondaryVoices) {
-      // Keep only first V: header and its content
-      const lines = out.split(/\r?\n/)
-      let keptVoice = null
-      const result = []
-      for (const line of lines) {
-        if (/^V:\s*/i.test(line)) {
-          const id = line.replace(/^V:\s*/i, '').trim()
-          if (keptVoice === null) {
-            keptVoice = id
-            result.push(line)
-          }
-          continue
-        }
-        if (keptVoice === null) {
-          result.push(line) // headers before V:
-        } else {
-          if (!/^V:\s*/i.test(line)) result.push(line)
-        }
-      }
-      out = result.join('\n')
-    }
-    
-    if (options.limitRhythm) {
-      // Map 1/16 and faster up to 1/8
-      out = out.replace(/([_^=]?[A-Ga-g][,']*)(\d*\/?\d*)/g, (m, pitch, dur) => {
-        if (!dur) return m
-        const parts = dur.split('/')
-        if (parts.length === 1) return m
-        const denom = Number(parts[1] || '1')
-        if (!Number.isFinite(denom) || denom === 0) return m
-        if (denom >= 16) {
-          return pitch + '/8'
-        }
-        return m
-      })
-    }
-    
-    if (options.simplifyTies) {
-      out = out.replace(/\(|\)/g, '')
-      out = out.replace(/-\s*/g, '')
-    }
-    
-    // Normalize whitespace
-    out = out
-      .split(/\r?\n/)
-      .map(l => l.replace(/\s+$/g, ''))
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-    
-    return out
-  }
-
   const handleRenderOriginal = () => {
     if (!abcInput.trim()) {
       setAbcInput(defaultABC)
     }
     renderAbc(originalScoreRef.current, abcInput)
-  }
-
-  const handleSimplifyAndRender = async () => {
-    if (!abcInput.trim()) {
-      setAbcInput(defaultABC)
-    }
-    
-    setIsLoading(true)
-    showStatus('loading', 'Simplifying music...')
-    
-    try {
-      let simplified: string
-      
-      if (settings.useAI) {
-        simplified = await simplifyWithAI(abcInput)
-      } else {
-        simplified = simplifyAbc(abcInput, settings)
-      }
-      
-      setSimplifiedAbc(simplified)
-      renderAbc(simplifiedScoreRef.current, simplified)
-      showStatus('success', 'Music simplified successfully!')
-    } catch (error) {
-      console.error('Simplification error:', error)
-      showStatus('error', 'Failed to simplify music. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   const playScore = async (target: HTMLElement | null, abcText: string, setControl: (control: any) => void) => {
@@ -260,28 +124,45 @@ export default function Home() {
     }
   }
 
-  const handlePlaySimplified = () => {
-    const text = simplifiedAbc || abcInput
-    playScore(simplifiedScoreRef.current, text, (control) => {
-      simplifiedSynthControlRef.current = control
-    })
-  }
-
-  const handleStopSimplified = () => {
-    if (simplifiedSynthControlRef.current) {
-      simplifiedSynthControlRef.current.stop()
-    }
-  }
-
-  const handleDownloadSimplified = () => {
-    const data = simplifiedAbc || abcInput
+  const handleDownloadAbc = () => {
+    const data = abcInput
     const blob = new Blob([data], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'simplified.abc'
+    a.download = 'lead-sheet.abc'
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleDownloadPng = () => {
+    if (!originalScoreRef.current) return
+    const svg = originalScoreRef.current.querySelector('svg')
+    if (!svg) {
+      showStatus('error', 'No score rendered to download')
+      return
+    }
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = document.createElement('img')
+
+    img.onload = () => {
+      canvas.width = img.width * 2
+      canvas.height = img.height * 2
+      ctx!.fillStyle = 'white'
+      ctx!.fillRect(0, 0, canvas.width, canvas.height)
+      ctx!.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+      const pngUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = pngUrl
+      a.download = 'lead-sheet.png'
+      a.click()
+    }
+
+    img.src = 'data:image/svg+xml,' + encodeURIComponent(svgData)
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -452,12 +333,6 @@ export default function Home() {
                   </div>
                 )}
               </div>
-              {simplifiedAbc && (
-                <div className="simplified-section">
-                  <h3>PROCESSED_OUTPUT_v1.0</h3>
-                  <div ref={simplifiedScoreRef} className="score-render"></div>
-                </div>
-              )}
             </div>
           </section>
         </div>
@@ -468,7 +343,7 @@ export default function Home() {
             <button
               className="btn-upload-full"
               onClick={handleUploadClick}
-              disabled={isUploading || isLoading}
+              disabled={isUploading}
             >
               <div className="upload-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -513,26 +388,26 @@ export default function Home() {
               <button
                 className="btn-sidebar btn-render"
                 onClick={handleRenderOriginal}
-                disabled={isLoading || isUploading}
+                disabled={isUploading}
               >
                 RENDER
+              </button>
+              <button
+                className="btn-sidebar btn-simplify"
+                onClick={handleDownloadPng}
+                disabled={isUploading}
+              >
+                DOWNLOAD PNG
               </button>
             </div>
 
             <div className="playback-controls">
               <div className="playback-row">
-                <span>ORIGINAL</span>
+                <span>PLAYBACK</span>
                 <div className="playback-buttons">
                   <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
                   <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
-                </div>
-              </div>
-              <div className="playback-row">
-                <span>LEAD SHEET</span>
-                <div className="playback-buttons">
-                  <button className="btn-icon" onClick={handlePlaySimplified} title="Play">▶</button>
-                  <button className="btn-icon" onClick={handleStopSimplified} title="Stop">■</button>
-                  <button className="btn-icon" onClick={handleDownloadSimplified} title="Download">↓</button>
+                  <button className="btn-icon" onClick={handleDownloadAbc} title="Download ABC">↓</button>
                 </div>
               </div>
             </div>
