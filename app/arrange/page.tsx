@@ -42,6 +42,8 @@ export default function Home() {
     value: 'C',
     duration: '2' // quarter note
   })
+  const [selectedElement, setSelectedElement] = useState<{ startChar: number; endChar: number } | null>(null)
+  const selectedElementRef = useRef<SVGElement | null>(null)
 
   const originalScoreRef = useRef<HTMLDivElement>(null)
   const originalSynthControlRef = useRef<any>(null)
@@ -70,11 +72,19 @@ export default function Home() {
     setTimeout(() => setStatus(null), 5000)
   }
 
+  // Helper to extract duration from ABC note
+  const extractDuration = (noteStr: string): string => {
+    // Match note pattern: optional accidental, note letter, optional octave markers, optional duration
+    const match = noteStr.match(/^[_^=]*[A-Ga-gz][,']*(\d*\/?\d*)/)
+    if (match && match[1]) {
+      return match[1] // Return the duration part (e.g., "2", "4", "/2", "3/2")
+    }
+    return '2' // Default to quarter note duration
+  }
+
   // Handle click on score element
   const handleScoreClick = useCallback((abcElem: any, _tuneNumber: number, _classes: string, _analysis: any, _drag: any, _mouseEvent: MouseEvent) => {
     if (!isEditorOpen) return // Only handle clicks when editor is open
-
-    if (selectedTool.type === 'select') return // Select mode does nothing for now
 
     if (!abcElem) return
 
@@ -83,14 +93,36 @@ export default function Home() {
 
     if (startChar === undefined || endChar === undefined) return
 
+    // In select mode, just select the element
+    if (selectedTool.type === 'select') {
+      setSelectedElement({ startChar, endChar })
+      return
+    }
+
+    // Clear selection when editing
+    setSelectedElement(null)
+
     setAbcInput(prevAbc => {
       const before = prevAbc.substring(0, startChar)
       const selected = prevAbc.substring(startChar, endChar)
       const after = prevAbc.substring(endChar)
 
       if (selectedTool.type === 'delete') {
-        // Delete the clicked element
-        return before + after
+        // Check if it's a note (not a rest, bar line, or other element)
+        const isNote = /^[_^=]*[A-Ga-g]/.test(selected)
+        const isRest = /^z/.test(selected)
+
+        if (isNote) {
+          // Replace note with rest of same duration
+          const duration = extractDuration(selected)
+          return before + 'z' + duration + after
+        } else if (isRest) {
+          // For rests, just remove them (or keep as is)
+          return before + after
+        } else {
+          // For other elements (dynamics, chord symbols, etc.), just remove
+          return before + after
+        }
       }
 
       if (selectedTool.type === 'note' || selectedTool.type === 'rest') {
@@ -140,27 +172,154 @@ export default function Home() {
 
     try {
       targetEl.innerHTML = ''
-      const options: any = { responsive: 'resize' }
-
-      if (withClickListener && isEditorOpen) {
-        options.clickListener = handleScoreClick
-        options.add_classes = true
+      const options: any = {
+        responsive: 'resize',
+        add_classes: true,
+        clickListener: withClickListener && isEditorOpen ? handleScoreClick : undefined
       }
 
-      return window.ABCJS.renderAbc(targetEl, abcText, options)
+      const visualObj = window.ABCJS.renderAbc(targetEl, abcText, options)
+
+      // Add click handlers for all SVG elements (dynamics, chords, etc.)
+      if (withClickListener && isEditorOpen && visualObj && visualObj[0]) {
+        const svgEl = targetEl.querySelector('svg')
+        if (svgEl) {
+          svgEl.style.cursor = 'crosshair'
+
+          // Store tune data for lookup
+          const tune = visualObj[0]
+
+          svgEl.addEventListener('click', (e) => {
+            const target = e.target as SVGElement
+
+            // Check if clicked on a decoration/dynamic (text elements, or elements with decoration-related classes)
+            const isDecoration = target.tagName === 'text' ||
+                                 target.closest('text') ||
+                                 target.classList.contains('abcjs-decoration') ||
+                                 target.closest('.abcjs-decoration') ||
+                                 target.closest('[data-name]')
+
+            const clickableEl = (target.tagName === 'text' ? target : target.closest('text, .abcjs-decoration, [data-name]')) as SVGElement
+
+            if (clickableEl && isDecoration && selectedTool.type === 'select') {
+              // Clear previous selection
+              if (selectedElementRef.current) {
+                selectedElementRef.current.classList.remove('selected-note')
+              }
+              // Highlight the clicked element directly
+              clickableEl.classList.add('selected-note')
+              selectedElementRef.current = clickableEl
+
+              // Find the ABC element to get startChar/endChar for potential editing
+              try {
+                if (tune.engraver && tune.engraver.staffgroups) {
+                  for (const staffgroup of tune.engraver.staffgroups) {
+                    if (staffgroup.voices && Array.isArray(staffgroup.voices)) {
+                      for (const voice of staffgroup.voices) {
+                        if (!Array.isArray(voice)) continue
+                        for (const elem of voice) {
+                          if (elem && elem.children && Array.isArray(elem.children)) {
+                            for (const child of elem.children) {
+                              if (child.graphelem === clickableEl ||
+                                  (child.graphelem && child.graphelem.contains && child.graphelem.contains(clickableEl))) {
+                                if (elem.abcelem) {
+                                  setSelectedElement({ startChar: elem.abcelem.startChar, endChar: elem.abcelem.endChar })
+                                  return
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                console.log('Click handler error:', err)
+              }
+              return
+            }
+
+            if (clickableEl && isDecoration && selectedTool.type === 'delete') {
+              // Find and delete the decoration
+              try {
+                if (tune.engraver && tune.engraver.staffgroups) {
+                  for (const staffgroup of tune.engraver.staffgroups) {
+                    if (staffgroup.voices && Array.isArray(staffgroup.voices)) {
+                      for (const voice of staffgroup.voices) {
+                        if (!Array.isArray(voice)) continue
+                        for (const elem of voice) {
+                          if (elem && elem.children && Array.isArray(elem.children)) {
+                            for (const child of elem.children) {
+                              if (child.graphelem === clickableEl ||
+                                  (child.graphelem && child.graphelem.contains && child.graphelem.contains(clickableEl))) {
+                                if (elem.abcelem) {
+                                  handleScoreClick(elem.abcelem, 0, '', null, null, e as any)
+                                  return
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                console.log('Click handler error:', err)
+              }
+            }
+          })
+        }
+      }
+
+      // Highlight selected element using ABCJS's selection API
+      if (selectedElement && visualObj && visualObj[0]) {
+        try {
+          // Use ABCJS's built-in selection highlighting
+          const tune = visualObj[0]
+          if (tune.engraver && tune.engraver.staffgroups) {
+            tune.engraver.staffgroups.forEach((staffgroup: any) => {
+              if (staffgroup.voices) {
+                staffgroup.voices.forEach((voice: any) => {
+                  voice.forEach((elem: any) => {
+                    if (elem.abcelem &&
+                        elem.abcelem.startChar === selectedElement.startChar &&
+                        elem.abcelem.endChar === selectedElement.endChar) {
+                      // Add highlight class to all SVG elements of this note
+                      if (elem.children) {
+                        elem.children.forEach((child: any) => {
+                          if (child.graphelem) {
+                            child.graphelem.setAttribute('class',
+                              (child.graphelem.getAttribute('class') || '') + ' selected-note')
+                          }
+                        })
+                      }
+                    }
+                  })
+                })
+              }
+            })
+          }
+        } catch (e) {
+          console.log('Selection highlight error:', e)
+        }
+      }
+
+      return visualObj
     } catch (e) {
       console.error(e)
       showStatus('error', 'Render error: ' + (e as Error).message)
       return null
     }
-  }, [handleScoreClick, isEditorOpen])
+  }, [handleScoreClick, isEditorOpen, selectedElement, selectedTool])
 
-  // Auto-render when ABC input changes
+  // Auto-render when ABC input changes or selection changes
   useEffect(() => {
     if (abcjsLoaded && abcInput.trim()) {
       renderAbc(originalScoreRef.current, abcInput, true)
     }
-  }, [abcInput, abcjsLoaded, isEditorOpen, renderAbc])
+  }, [abcInput, abcjsLoaded, isEditorOpen, renderAbc, selectedElement])
 
   const playScore = async (target: HTMLElement | null, abcText: string, setControl: (control: any) => void) => {
     if (!target || !window.ABCJS) return
@@ -500,7 +659,7 @@ export default function Home() {
               </div>
             </div>
             <div className="sheet-music-container">
-              <div ref={originalScoreRef} className={`score-render ${isEditorOpen ? 'editing' : ''}`}>
+              <div ref={originalScoreRef} className={`score-render ${isEditorOpen ? (selectedTool.type === 'select' ? 'selecting' : 'editing') : ''}`}>
                 {!abcInput && (
                   <div className="empty-state">
                     <p>AWAITING INPUT SEQUENCE...</p>
@@ -584,9 +743,18 @@ export default function Home() {
 
       <ScoreEditor
         isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
+        onClose={() => {
+          setIsEditorOpen(false)
+          setSelectedElement(null)
+        }}
         selectedTool={selectedTool}
-        onToolChange={setSelectedTool}
+        onToolChange={(tool) => {
+          setSelectedTool(tool)
+          // Clear selection when switching away from select mode
+          if (tool.type !== 'select') {
+            setSelectedElement(null)
+          }
+        }}
       />
     </div>
   )

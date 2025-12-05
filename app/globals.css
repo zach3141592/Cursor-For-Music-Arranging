@@ -1308,12 +1308,46 @@ html, body {
   cursor: crosshair;
 }
 
+.score-render.selecting svg {
+  cursor: default;
+}
+
+.score-render.selecting svg .abcjs-note,
+.score-render.selecting svg .abcjs-rest,
+.score-render.selecting svg .abcjs-decoration,
+.score-render.selecting svg .abcjs-dynamics,
+.score-render.selecting svg .abcjs-chord,
+.score-render.selecting svg text {
+  cursor: pointer;
+}
+
+/* Selected note highlight */
+.score-render svg .selected-note,
+.score-render svg .selected-note * {
+  fill: #fbbf24 !important;
+  stroke: #f59e0b !important;
+}
+
 .score-render svg .abcjs-note,
-.score-render svg .abcjs-rest {
+.score-render svg .abcjs-rest,
+.score-render svg .abcjs-decoration,
+.score-render svg .abcjs-dynamics,
+.score-render svg .abcjs-chord,
+.score-render svg text {
   cursor: pointer;
 }
 
 .score-render svg .abcjs-note:hover,
-.score-render svg .abcjs-rest:hover {
+.score-render svg .abcjs-rest:hover,
+.score-render svg .abcjs-decoration:hover,
+.score-render svg .abcjs-dynamics:hover,
+.score-render svg .abcjs-chord:hover,
+.score-render svg text:hover {
   filter: brightness(0.7);
+}
+
+/* Make sure text elements in score are clickable */
+.score-render.editing svg text,
+.score-render.selecting svg text {
+  pointer-events: auto;
 }
