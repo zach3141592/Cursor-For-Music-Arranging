@@ -316,7 +316,7 @@ export default function Home() {
         <div className="header-right">
           <div className="system-status">
             <div className="status-dot"></div>
-            <span>SYSTEM READY</span>
+            <span>SYSTEMS OPERATIONAL</span>
           </div>
         </div>
       </header>
@@ -334,7 +334,7 @@ export default function Home() {
           {/* ABC Notation Panel */}
           <section className="notation-panel">
             <div className="panel-header">
-              <h2>SOURCE_CODE // ABC</h2>
+              <h2>SOURCE_CODE // ABCJS</h2>
               <button
                 className="btn-header-upload"
                 onClick={handleUploadClick}
