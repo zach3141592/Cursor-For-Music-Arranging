@@ -457,13 +457,19 @@ export default function Home() {
             )}
           </div>
           <form className="chat-input-form" onSubmit={handleChatSubmit}>
-            <input
-              type="text"
+            <textarea
               className="chat-input"
               placeholder="Describe what you want to create..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleChatSubmit(e)
+                }
+              }}
               disabled={isChatLoading}
+              rows={1}
             />
             <button
               type="submit"

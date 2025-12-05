@@ -344,6 +344,7 @@ html, body {
 
 .chat-input-form {
   display: flex;
+  align-items: flex-end;
   gap: 8px;
   padding: 16px;
   border-top: 1px solid var(--border);
@@ -361,6 +362,12 @@ html, body {
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s ease;
+  resize: none;
+  min-height: 44px;
+  max-height: 150px;
+  overflow-y: auto;
+  field-sizing: content;
+  line-height: 1.4;
 }
 
 .chat-input:focus {
