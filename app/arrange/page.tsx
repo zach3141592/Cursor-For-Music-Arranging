@@ -36,12 +36,15 @@ export default function Home() {
   const originalSynthControlRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [abcjsLoaded, setAbcjsLoaded] = useState(false)
+
   useEffect(() => {
     // Load abcjs from CDN
     const script = document.createElement('script')
     script.src = 'https://cdn.jsdelivr.net/npm/abcjs@6.4.4/dist/abcjs-basic-min.js'
     script.onload = () => {
       console.log('abcjs loaded')
+      setAbcjsLoaded(true)
     }
     document.head.appendChild(script)
 
@@ -49,6 +52,13 @@ export default function Home() {
       document.head.removeChild(script)
     }
   }, [])
+
+  // Auto-render when ABC input changes
+  useEffect(() => {
+    if (abcjsLoaded && abcInput.trim()) {
+      renderAbc(originalScoreRef.current, abcInput)
+    }
+  }, [abcInput, abcjsLoaded])
 
   const showStatus = (type: 'success' | 'error' | 'loading', message: string) => {
     setStatus({ type, message })
@@ -66,13 +76,6 @@ export default function Home() {
       showStatus('error', 'Render error: ' + (e as Error).message)
       return null
     }
-  }
-
-  const handleRenderOriginal = () => {
-    if (!abcInput.trim()) {
-      setAbcInput(defaultABC)
-    }
-    renderAbc(originalScoreRef.current, abcInput)
   }
 
   const playScore = async (target: HTMLElement | null, abcText: string, setControl: (control: any) => void) => {
@@ -344,6 +347,27 @@ export default function Home() {
             <div className="panel-header">
               <h2>SOURCE_CODE // ABC</h2>
             </div>
+            <button
+              className="btn-upload-full"
+              onClick={handleUploadClick}
+              disabled={isUploading}
+            >
+              <div className="upload-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <span>{isUploading ? 'ANALYZING...' : 'UPLOAD SHEET MUSIC'}</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,application/pdf"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
             <textarea
               id="abc-input"
               className="abc-editor"
@@ -374,27 +398,6 @@ export default function Home() {
         {/* Sidebar */}
         <aside className="sidebar">
           <div className="sidebar-section">
-            <button
-              className="btn-upload-full"
-              onClick={handleUploadClick}
-              disabled={isUploading}
-            >
-              <div className="upload-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-              </div>
-              <span>{isUploading ? 'ANALYZING...' : 'UPLOAD SHEET MUSIC'}</span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,application/pdf"
-              onChange={handleFileUpload}
-              style={{ display: 'none' }}
-            />
             {uploadedImage && (
               <div className="sidebar-preview">
                 <div className="preview-header">
@@ -419,13 +422,6 @@ export default function Home() {
             )}
 
             <div className="sidebar-actions">
-              <button
-                className="btn-sidebar btn-render"
-                onClick={handleRenderOriginal}
-                disabled={isUploading}
-              >
-                RENDER
-              </button>
               <button
                 className="btn-sidebar btn-simplify"
                 onClick={handleDownloadPdf}
