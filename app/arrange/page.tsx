@@ -26,6 +26,8 @@ export default function Home() {
   const [abcInput, setAbcInput] = useState(defaultABC)
   const [simplifiedAbc, setSimplifiedAbc] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading', message: string} | null>(null)
   const [settings, setSettings] = useState({
     removeOrnaments: true,
@@ -40,6 +42,7 @@ export default function Home() {
   const simplifiedScoreRef = useRef<HTMLDivElement>(null)
   const originalSynthControlRef = useRef<any>(null)
   const simplifiedSynthControlRef = useRef<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     // Load abcjs from CDN
@@ -278,6 +281,85 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      showStatus('error', 'Please upload an image (PNG, JPG, WEBP) or PDF file')
+      return
+    }
+
+    setIsUploading(true)
+    showStatus('loading', 'Reading sheet music from image...')
+
+    try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Remove the data URL prefix to get just the base64 data
+          const base64Data = result.split(',')[1]
+          resolve(base64Data)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      // Store the image for preview
+      setUploadedImage(`data:${file.type};base64,${base64}`)
+
+      // Send to API
+      const response = await fetch('/api/read-music', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64,
+          mimeType: file.type
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (data.abc) {
+        setAbcInput(data.abc)
+        // Automatically render the result
+        setTimeout(() => {
+          renderAbc(originalScoreRef.current, data.abc)
+        }, 100)
+        showStatus('success', 'Sheet music read successfully! ABC notation generated.')
+      } else {
+        throw new Error('No ABC notation returned')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      showStatus('error', 'Failed to read sheet music. Please try a clearer image.')
+    } finally {
+      setIsUploading(false)
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const clearUploadedImage = () => {
+    setUploadedImage(null)
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -307,73 +389,120 @@ export default function Home() {
 
       <main className="dashboard-main">
         <section className="dashboard-input">
-          <div className="section-header">
+          <div className="input-header">
             <h2>Input</h2>
-            <div className="input-actions">
-              <button
-                className="btn-sm"
-                onClick={handleRenderOriginal}
-                disabled={isLoading}
-              >
-                Render
-              </button>
-              <button
-                className="btn-sm btn-primary"
-                onClick={handleSimplifyAndRender}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Processing...' : 'Simplify'}
-              </button>
-            </div>
+            <p className="input-subtitle">Upload sheet music or paste ABC notation</p>
           </div>
+
+          <div className="input-actions-bar">
+            <button
+              className="btn-action btn-upload"
+              onClick={handleUploadClick}
+              disabled={isUploading || isLoading}
+            >
+              <span className="btn-icon-left">+</span>
+              {isUploading ? 'Reading...' : 'Upload'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,application/pdf"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+            <button
+              className="btn-action"
+              onClick={handleRenderOriginal}
+              disabled={isLoading || isUploading}
+            >
+              Render
+            </button>
+            <button
+              className="btn-action btn-primary"
+              onClick={handleSimplifyAndRender}
+              disabled={isLoading || isUploading}
+            >
+              {isLoading ? 'Processing...' : 'Simplify'}
+            </button>
+          </div>
+
+          {uploadedImage && (
+            <div className="uploaded-image-preview">
+              <div className="preview-header">
+                <span>Uploaded Sheet Music</span>
+                <button className="btn-icon btn-close" onClick={clearUploadedImage} title="Clear">×</button>
+              </div>
+              <img src={uploadedImage} alt="Uploaded sheet music" />
+            </div>
+          )}
+
           <textarea
             id="abc-input"
             spellCheck={false}
             value={abcInput}
             onChange={(e) => setAbcInput(e.target.value)}
-            placeholder="Paste ABC notation here..."
+            placeholder="X:1&#10;T:Title&#10;M:4/4&#10;K:C&#10;..."
           />
-          <div className="settings-row">
-            <label className="setting">
-              <input
-                type="checkbox"
-                checked={settings.useAI}
-                onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
-              />
-              <span>AI</span>
-            </label>
-            <label className="setting">
-              <input
-                type="checkbox"
-                checked={settings.removeOrnaments}
-                onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
-              />
-              <span>No ornaments</span>
-            </label>
-            <label className="setting">
-              <input
-                type="checkbox"
-                checked={settings.reduceChords}
-                onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
-              />
-              <span>Simple chords</span>
-            </label>
-            <label className="setting">
-              <input
-                type="checkbox"
-                checked={settings.dropSecondaryVoices}
-                onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
-              />
-              <span>Single voice</span>
-            </label>
-            <label className="setting">
-              <input
-                type="checkbox"
-                checked={settings.limitRhythm}
-                onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
-              />
-              <span>Simple rhythm</span>
-            </label>
+
+          <div className="settings-panel">
+            <div className="settings-title">Simplification Options</div>
+            <div className="settings-grid-modern">
+              <label className="setting-item">
+                <input
+                  type="checkbox"
+                  checked={settings.useAI}
+                  onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
+                />
+                <div className="setting-content">
+                  <span className="setting-label">Use AI</span>
+                  <span className="setting-desc">GPT-4 powered</span>
+                </div>
+              </label>
+              <label className="setting-item">
+                <input
+                  type="checkbox"
+                  checked={settings.removeOrnaments}
+                  onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
+                />
+                <div className="setting-content">
+                  <span className="setting-label">No Ornaments</span>
+                  <span className="setting-desc">Remove trills</span>
+                </div>
+              </label>
+              <label className="setting-item">
+                <input
+                  type="checkbox"
+                  checked={settings.reduceChords}
+                  onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
+                />
+                <div className="setting-content">
+                  <span className="setting-label">Simple Chords</span>
+                  <span className="setting-desc">Reduce notes</span>
+                </div>
+              </label>
+              <label className="setting-item">
+                <input
+                  type="checkbox"
+                  checked={settings.dropSecondaryVoices}
+                  onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
+                />
+                <div className="setting-content">
+                  <span className="setting-label">Single Voice</span>
+                  <span className="setting-desc">Melody only</span>
+                </div>
+              </label>
+              <label className="setting-item">
+                <input
+                  type="checkbox"
+                  checked={settings.limitRhythm}
+                  onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
+                />
+                <div className="setting-content">
+                  <span className="setting-label">Simple Rhythm</span>
+                  <span className="setting-desc">Slower notes</span>
+                </div>
+              </label>
+            </div>
           </div>
         </section>
 
@@ -385,7 +514,13 @@ export default function Home() {
               <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
             </div>
           </div>
-          <div ref={originalScoreRef} className="score-container"></div>
+          <div ref={originalScoreRef} className="score-container">
+            {!abcInput && !uploadedImage && (
+              <div className="empty-state">
+                <p>Enter ABC notation or upload sheet music to see the score here</p>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="dashboard-score">
@@ -397,7 +532,13 @@ export default function Home() {
               <button className="btn-icon" onClick={handleDownloadSimplified} title="Download">↓</button>
             </div>
           </div>
-          <div ref={simplifiedScoreRef} className="score-container"></div>
+          <div ref={simplifiedScoreRef} className="score-container">
+            {!simplifiedAbc && (
+              <div className="empty-state">
+                <p>Click "Simplify" to generate an easier version</p>
+              </div>
+            )}
+          </div>
         </section>
       </main>
     </div>
