@@ -1333,8 +1333,24 @@ html, body {
 .score-render svg .abcjs-decoration,
 .score-render svg .abcjs-dynamics,
 .score-render svg .abcjs-chord,
-.score-render svg text {
+.score-render svg text,
+.score-render svg path,
+.score-render svg ellipse,
+.score-render svg rect {
   cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Larger hit area for easier clicking */
+.score-render.editing svg text,
+.score-render.editing svg .abcjs-note,
+.score-render.editing svg .abcjs-rest,
+.score-render.selecting svg text,
+.score-render.selecting svg .abcjs-note,
+.score-render.selecting svg .abcjs-rest {
+  stroke: transparent;
+  stroke-width: 15px;
+  paint-order: stroke fill;
 }
 
 .score-render svg .abcjs-note:hover,
@@ -1343,11 +1359,5 @@ html, body {
 .score-render svg .abcjs-dynamics:hover,
 .score-render svg .abcjs-chord:hover,
 .score-render svg text:hover {
-  filter: brightness(0.7);
-}
-
-/* Make sure text elements in score are clickable */
-.score-render.editing svg text,
-.score-render.selecting svg text {
-  pointer-events: auto;
+  filter: brightness(0.6);
 }

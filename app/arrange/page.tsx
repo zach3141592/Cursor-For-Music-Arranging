@@ -42,7 +42,7 @@ export default function Home() {
     value: 'C',
     duration: '2' // quarter note
   })
-  const [selectedElement, setSelectedElement] = useState<{ startChar: number; endChar: number } | null>(null)
+  const [selectedElement, setSelectedElement] = useState<{ startChar: number; endChar: number; text?: string } | null>(null)
   const selectedElementRef = useRef<SVGElement | null>(null)
 
   const originalScoreRef = useRef<HTMLDivElement>(null)
@@ -186,88 +186,56 @@ export default function Home() {
         if (svgEl) {
           svgEl.style.cursor = 'crosshair'
 
-          // Store tune data for lookup
-          const tune = visualObj[0]
-
           svgEl.addEventListener('click', (e) => {
             const target = e.target as SVGElement
 
-            // Check if clicked on a decoration/dynamic (text elements, or elements with decoration-related classes)
-            const isDecoration = target.tagName === 'text' ||
-                                 target.closest('text') ||
-                                 target.classList.contains('abcjs-decoration') ||
-                                 target.closest('.abcjs-decoration') ||
-                                 target.closest('[data-name]')
+            // Check if clicked on a text element (dynamics, chord symbols, etc.)
+            let textEl: SVGElement | null = null
+            if (target.tagName === 'text') {
+              textEl = target
+            } else if (target.closest('text')) {
+              textEl = target.closest('text') as SVGElement
+            } else if (target.tagName === 'tspan' && target.parentElement) {
+              textEl = target.parentElement as unknown as SVGElement
+            }
 
-            const clickableEl = (target.tagName === 'text' ? target : target.closest('text, .abcjs-decoration, [data-name]')) as SVGElement
-
-            if (clickableEl && isDecoration && selectedTool.type === 'select') {
+            if (textEl && selectedTool.type === 'select') {
               // Clear previous selection
               if (selectedElementRef.current) {
                 selectedElementRef.current.classList.remove('selected-note')
               }
               // Highlight the clicked element directly
-              clickableEl.classList.add('selected-note')
-              selectedElementRef.current = clickableEl
+              textEl.classList.add('selected-note')
+              selectedElementRef.current = textEl
 
-              // Find the ABC element to get startChar/endChar for potential editing
-              try {
-                if (tune.engraver && tune.engraver.staffgroups) {
-                  for (const staffgroup of tune.engraver.staffgroups) {
-                    if (staffgroup.voices && Array.isArray(staffgroup.voices)) {
-                      for (const voice of staffgroup.voices) {
-                        if (!Array.isArray(voice)) continue
-                        for (const elem of voice) {
-                          if (elem && elem.children && Array.isArray(elem.children)) {
-                            for (const child of elem.children) {
-                              if (child.graphelem === clickableEl ||
-                                  (child.graphelem && child.graphelem.contains && child.graphelem.contains(clickableEl))) {
-                                if (elem.abcelem) {
-                                  setSelectedElement({ startChar: elem.abcelem.startChar, endChar: elem.abcelem.endChar })
-                                  return
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              } catch (err) {
-                console.log('Click handler error:', err)
+              // Get the text content for searching in ABC
+              const textContent = textEl.textContent || ''
+
+              // Store the text for search-based deletion
+              if (textContent) {
+                setSelectedElement({ startChar: -1, endChar: -1, text: textContent })
               }
               return
             }
 
-            if (clickableEl && isDecoration && selectedTool.type === 'delete') {
-              // Find and delete the decoration
-              try {
-                if (tune.engraver && tune.engraver.staffgroups) {
-                  for (const staffgroup of tune.engraver.staffgroups) {
-                    if (staffgroup.voices && Array.isArray(staffgroup.voices)) {
-                      for (const voice of staffgroup.voices) {
-                        if (!Array.isArray(voice)) continue
-                        for (const elem of voice) {
-                          if (elem && elem.children && Array.isArray(elem.children)) {
-                            for (const child of elem.children) {
-                              if (child.graphelem === clickableEl ||
-                                  (child.graphelem && child.graphelem.contains && child.graphelem.contains(clickableEl))) {
-                                if (elem.abcelem) {
-                                  handleScoreClick(elem.abcelem, 0, '', null, null, e as any)
-                                  return
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
+            // Handle delete mode for text elements
+            if (textEl && selectedTool.type === 'delete') {
+              const textContent = textEl.textContent || ''
+              if (textContent) {
+                // Delete the dynamic/chord from ABC
+                setAbcInput(prevAbc => {
+                  const text = textContent.trim()
+                  const patterns = [`!${text}!`, `"${text}"`]
+                  for (const p of patterns) {
+                    const idx = prevAbc.indexOf(p)
+                    if (idx !== -1) {
+                      return prevAbc.substring(0, idx) + prevAbc.substring(idx + p.length)
                     }
                   }
-                }
-              } catch (err) {
-                console.log('Click handler error:', err)
+                  return prevAbc
+                })
               }
+              return
             }
           })
         }
@@ -320,6 +288,74 @@ export default function Home() {
       renderAbc(originalScoreRef.current, abcInput, true)
     }
   }, [abcInput, abcjsLoaded, isEditorOpen, renderAbc, selectedElement])
+
+  // Keyboard shortcut for delete
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isEditorOpen || !selectedElement) return
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+
+        setAbcInput(prevAbc => {
+          // If we have exact character positions
+          if (selectedElement.startChar >= 0 && selectedElement.endChar >= 0) {
+            const before = prevAbc.substring(0, selectedElement.startChar)
+            const selected = prevAbc.substring(selectedElement.startChar, selectedElement.endChar)
+            const after = prevAbc.substring(selectedElement.endChar)
+
+            // Check if it's a note - replace with rest
+            const isNote = /^[_^=]*[A-Ga-g]/.test(selected)
+            if (isNote) {
+              const duration = extractDuration(selected)
+              return before + 'z' + duration + after
+            }
+            // Otherwise just delete
+            return before + after
+          }
+
+          // If we only have text content (for dynamics/decorations), search and delete
+          if (selectedElement.text) {
+            const text = selectedElement.text.trim()
+
+            // Try multiple patterns for dynamics and chord symbols
+            const patterns = [
+              new RegExp(`!${text}!`, 'i'),              // Dynamic: !pp!, !mf!
+              new RegExp(`"[^"]*${text}[^"]*"`, 'i'),    // Chord with text: "Cmaj7"
+              new RegExp(`!${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}!`, 'i'), // Escaped
+            ]
+
+            for (const pattern of patterns) {
+              const match = prevAbc.match(pattern)
+              if (match && match.index !== undefined) {
+                return prevAbc.substring(0, match.index) + prevAbc.substring(match.index + match[0].length)
+              }
+            }
+
+            // Also try direct string search as fallback
+            const directPatterns = [`!${text}!`, `"${text}"`]
+            for (const p of directPatterns) {
+              const idx = prevAbc.indexOf(p)
+              if (idx !== -1) {
+                return prevAbc.substring(0, idx) + prevAbc.substring(idx + p.length)
+              }
+            }
+          }
+
+          return prevAbc
+        })
+
+        setSelectedElement(null)
+        if (selectedElementRef.current) {
+          selectedElementRef.current.classList.remove('selected-note')
+          selectedElementRef.current = null
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isEditorOpen, selectedElement])
 
   const playScore = async (target: HTMLElement | null, abcText: string, setControl: (control: any) => void) => {
     if (!target || !window.ABCJS) return
