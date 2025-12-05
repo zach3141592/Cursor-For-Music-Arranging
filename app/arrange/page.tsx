@@ -422,6 +422,46 @@ export default function Home() {
       )}
 
       <main className="dashboard-main">
+        {/* Main Content Area - Split View */}
+        <div className="content-area">
+          {/* ABC Notation Panel */}
+          <section className="notation-panel">
+            <div className="panel-header">
+              <h2>SOURCE_CODE // ABC</h2>
+            </div>
+            <textarea
+              id="abc-input"
+              className="abc-editor"
+              spellCheck={false}
+              value={abcInput}
+              onChange={(e) => setAbcInput(e.target.value)}
+              placeholder="X:1&#10;T:Title&#10;M:4/4&#10;L:1/8&#10;K:C&#10;CDEF GABc |"
+            />
+          </section>
+
+          {/* Rendered Sheet Music Panel */}
+          <section className="sheet-music-panel">
+            <div className="panel-header">
+              <h2>VISUAL_RENDER // SCORE</h2>
+            </div>
+            <div className="sheet-music-container">
+              <div ref={originalScoreRef} className="score-render">
+                {!abcInput && (
+                  <div className="empty-state">
+                    <p>AWAITING INPUT SEQUENCE...</p>
+                  </div>
+                )}
+              </div>
+              {simplifiedAbc && (
+                <div className="simplified-section">
+                  <h3>PROCESSED_OUTPUT_v1.0</h3>
+                  <div ref={simplifiedScoreRef} className="score-render"></div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
         {/* Left Sidebar - Settings */}
         <aside className="sidebar">
           <div className="sidebar-section">
@@ -555,46 +595,6 @@ export default function Home() {
             </div>
           </div>
         </aside>
-
-        {/* Main Content Area - Split View */}
-        <div className="content-area">
-          {/* ABC Notation Panel */}
-          <section className="notation-panel">
-            <div className="panel-header">
-              <h2>SOURCE_CODE // ABC</h2>
-            </div>
-            <textarea
-              id="abc-input"
-              className="abc-editor"
-              spellCheck={false}
-              value={abcInput}
-              onChange={(e) => setAbcInput(e.target.value)}
-              placeholder="X:1&#10;T:Title&#10;M:4/4&#10;L:1/8&#10;K:C&#10;CDEF GABc |"
-            />
-          </section>
-
-          {/* Rendered Sheet Music Panel */}
-          <section className="sheet-music-panel">
-            <div className="panel-header">
-              <h2>VISUAL_RENDER // SCORE</h2>
-            </div>
-            <div className="sheet-music-container">
-              <div ref={originalScoreRef} className="score-render">
-                {!abcInput && (
-                  <div className="empty-state">
-                    <p>AWAITING INPUT SEQUENCE...</p>
-                  </div>
-                )}
-              </div>
-              {simplifiedAbc && (
-                <div className="simplified-section">
-                  <h3>PROCESSED_OUTPUT_v1.0</h3>
-                  <div ref={simplifiedScoreRef} className="score-render"></div>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
       </main>
     </div>
   )

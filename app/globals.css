@@ -205,7 +205,7 @@ html, body {
 .sidebar {
   width: 300px;
   background: rgba(255, 255, 255, 0.95);
-  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
