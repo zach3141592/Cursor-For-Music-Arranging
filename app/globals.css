@@ -260,8 +260,10 @@ html, body {
 }
 
 .sidebar-actions {
-  margin-top: auto;
-  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 /* Layout - Content Area */

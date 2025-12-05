@@ -462,10 +462,9 @@ export default function Home() {
           </section>
         </div>
 
-        {/* Left Sidebar - Settings */}
+        {/* Sidebar */}
         <aside className="sidebar">
           <div className="sidebar-section">
-            <h3 className="sidebar-title">DATA_INPUT //</h3>
             <button
               className="btn-upload-full"
               onClick={handleUploadClick}
@@ -478,7 +477,7 @@ export default function Home() {
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
               </div>
-              <span>{isUploading ? 'ANALYZING INPUT...' : 'UPLOAD SHEET MUSIC'}</span>
+              <span>{isUploading ? 'ANALYZING...' : 'UPLOAD SHEET MUSIC'}</span>
             </button>
             <input
               ref={fileInputRef}
@@ -490,11 +489,11 @@ export default function Home() {
             {uploadedImage && (
               <div className="sidebar-preview">
                 <div className="preview-header">
-                  <span>INPUT_PREVIEW</span>
+                  <span>PREVIEW</span>
                   <button className="btn-icon btn-close" onClick={clearUploadedImage} title="Clear">×</button>
                 </div>
                 <img src={uploadedImage} alt="Uploaded sheet music" />
-                
+
                 {(processingInfo.length > 0 || (imageQuality && imageQuality.warnings.length > 0)) && (
                   <div className="processing-terminal">
                     <div className="terminal-line">System diagnostic...</div>
@@ -504,88 +503,32 @@ export default function Home() {
                     {processingInfo.map((info, i) => (
                       <div key={`proc-${i}`} className="terminal-line">EXEC: {info}</div>
                     ))}
-                    <div className="terminal-line">Ready for processing.</div>
+                    <div className="terminal-line">Ready.</div>
                   </div>
                 )}
               </div>
             )}
-          </div>
 
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">PROCESSING_PARAMETERS //</h3>
-            <div className="settings-list">
-              <label className="setting-toggle">
-                <span className="toggle-label">AI_ENHANCEMENT (GPT-4)</span>
-                <input
-                  type="checkbox"
-                  checked={settings.useAI}
-                  onChange={(e) => setSettings({...settings, useAI: e.target.checked})}
-                />
-              </label>
-              <label className="setting-toggle">
-                <span className="toggle-label">REMOVE_ORNAMENTS</span>
-                <input
-                  type="checkbox"
-                  checked={settings.removeOrnaments}
-                  onChange={(e) => setSettings({...settings, removeOrnaments: e.target.checked})}
-                />
-              </label>
-              <label className="setting-toggle">
-                <span className="toggle-label">SIMPLIFY_CHORDS</span>
-                <input
-                  type="checkbox"
-                  checked={settings.reduceChords}
-                  onChange={(e) => setSettings({...settings, reduceChords: e.target.checked})}
-                />
-              </label>
-              <label className="setting-toggle">
-                <span className="toggle-label">SINGLE_VOICE_MODE</span>
-                <input
-                  type="checkbox"
-                  checked={settings.dropSecondaryVoices}
-                  onChange={(e) => setSettings({...settings, dropSecondaryVoices: e.target.checked})}
-                />
-              </label>
-              <label className="setting-toggle">
-                <span className="toggle-label">RHYTHM_QUANTIZATION</span>
-                <input
-                  type="checkbox"
-                  checked={settings.limitRhythm}
-                  onChange={(e) => setSettings({...settings, limitRhythm: e.target.checked})}
-                />
-              </label>
+            <div className="sidebar-actions">
+              <button
+                className="btn-sidebar btn-render"
+                onClick={handleRenderOriginal}
+                disabled={isLoading || isUploading}
+              >
+                RENDER
+              </button>
             </div>
-          </div>
 
-          <div className="sidebar-section sidebar-actions">
-            <button
-              className="btn-sidebar btn-render"
-              onClick={handleRenderOriginal}
-              disabled={isLoading || isUploading}
-            >
-              RENDER SOURCE
-            </button>
-            <button
-              className="btn-sidebar btn-simplify"
-              onClick={handleSimplifyAndRender}
-              disabled={isLoading || isUploading}
-            >
-              {isLoading ? 'PROCESSING...' : 'EXECUTE SIMPLIFICATION'}
-            </button>
-          </div>
-
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">AUDIO_OUTPUT //</h3>
             <div className="playback-controls">
               <div className="playback-row">
-                <span>ORIGINAL_SOURCE</span>
+                <span>ORIGINAL</span>
                 <div className="playback-buttons">
                   <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
                   <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
                 </div>
               </div>
               <div className="playback-row">
-                <span>PROCESSED_OUTPUT</span>
+                <span>LEAD SHEET</span>
                 <div className="playback-buttons">
                   <button className="btn-icon" onClick={handlePlaySimplified} title="Play">▶</button>
                   <button className="btn-icon" onClick={handleStopSimplified} title="Stop">■</button>
