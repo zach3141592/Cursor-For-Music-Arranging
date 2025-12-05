@@ -11,17 +11,8 @@ declare global {
   }
 }
 
-const defaultABC = `X:1
-T:Simple Waltz
-+C:Traditional
-M:3/4
-L:1/8
-Q:1/4=120
-K:G
-V:1
-"RH" [G B d] d c | B2 A2 G2 | {a}g2 (3gag f2 | e2 d2 B2 |
-V:2
-"LH" G,2 G,2 G,2 | D,2 D,2 D,2 | C,2 C,2 C,2 | G,,2 G,,2 G,,2 |
+const defaultABC = `X: 1
+T: YOUR LEAD SHEET
 `
 
 export default function Home() {
