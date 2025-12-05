@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { jsPDF } from 'jspdf'
 import { preprocessImage, quickQualityCheck, type QualityReport } from '../lib/imagePreprocessing'
 
 declare global {
@@ -135,7 +136,7 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
-  const handleDownloadPng = () => {
+  const handleDownloadPdf = () => {
     if (!originalScoreRef.current) return
     const svg = originalScoreRef.current.querySelector('svg')
     if (!svg) {
@@ -143,23 +144,56 @@ export default function Home() {
       return
     }
 
+    showStatus('loading', 'Generating PDF...')
+
     const svgData = new XMLSerializer().serializeToString(svg)
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = document.createElement('img')
 
     img.onload = () => {
-      canvas.width = img.width * 2
-      canvas.height = img.height * 2
+      // High quality scale factor (300 DPI equivalent)
+      const scale = 4
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
       ctx!.fillStyle = 'white'
       ctx!.fillRect(0, 0, canvas.width, canvas.height)
       ctx!.drawImage(img, 0, 0, canvas.width, canvas.height)
 
-      const pngUrl = canvas.toDataURL('image/png')
-      const a = document.createElement('a')
-      a.href = pngUrl
-      a.download = 'lead-sheet.png'
-      a.click()
+      const imgData = canvas.toDataURL('image/png', 1.0)
+
+      // Create PDF - letter size (8.5 x 11 inches)
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'in',
+        format: 'letter'
+      })
+
+      const pageWidth = 8.5
+      const pageHeight = 11
+      const margin = 0.5
+      const maxWidth = pageWidth - (margin * 2)
+      const maxHeight = pageHeight - (margin * 2)
+
+      // Calculate aspect ratio and fit to page
+      const imgAspect = canvas.width / canvas.height
+      let finalWidth = maxWidth
+      let finalHeight = finalWidth / imgAspect
+
+      // If too tall, scale by height instead
+      if (finalHeight > maxHeight) {
+        finalHeight = maxHeight
+        finalWidth = finalHeight * imgAspect
+      }
+
+      // Center on page
+      const x = (pageWidth - finalWidth) / 2
+      const y = (pageHeight - finalHeight) / 2
+
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight)
+      pdf.save('lead-sheet.pdf')
+
+      showStatus('success', 'PDF downloaded!')
     }
 
     img.src = 'data:image/svg+xml,' + encodeURIComponent(svgData)
@@ -394,10 +428,10 @@ export default function Home() {
               </button>
               <button
                 className="btn-sidebar btn-simplify"
-                onClick={handleDownloadPng}
+                onClick={handleDownloadPdf}
                 disabled={isUploading}
               >
-                DOWNLOAD PNG
+                DOWNLOAD PDF
               </button>
             </div>
 
