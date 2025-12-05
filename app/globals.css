@@ -1024,23 +1024,23 @@ html, body {
 }
 
 .landing-title {
-  font-family: var(--font-sans);
-  font-size: 48px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(to bottom right, #111827, #4b5563);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-family: var(--font-mono);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
   margin: 24px 0 12px;
 }
 
 .landing-subtitle {
+  font-family: var(--font-mono);
   color: var(--text-secondary);
-  font-size: 18px;
+  font-size: 14px;
   line-height: 1.6;
   margin-bottom: 48px;
   font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .landing-footer {
@@ -1070,17 +1070,17 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 16px 48px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: var(--accent);
+  background: #111827;
   color: white;
   border-radius: 2px;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid transparent;
   position: relative;
   overflow: hidden;
@@ -1102,8 +1102,8 @@ html, body {
 }
 
 .btn-large:hover {
-  background: var(--accent-hover);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  background: #000000;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   transform: translateY(-2px);
 }
 
