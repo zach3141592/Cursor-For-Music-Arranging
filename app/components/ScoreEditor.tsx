@@ -2,11 +2,17 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 
+export interface SelectedTool {
+  type: 'note' | 'rest' | 'accidental' | 'dynamic' | 'articulation' | 'chord' | 'delete' | 'select'
+  value: string
+  duration: string
+}
+
 interface ScoreEditorProps {
   isOpen: boolean
   onClose: () => void
-  abcNotation: string
-  onSave: (newAbc: string) => void
+  selectedTool: SelectedTool
+  onToolChange: (tool: SelectedTool) => void
 }
 
 interface Position {
@@ -14,42 +20,21 @@ interface Position {
   y: number
 }
 
-export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: ScoreEditorProps) {
-  const [editedAbc, setEditedAbc] = useState(abcNotation)
+export default function ScoreEditor({ isOpen, onClose, selectedTool, onToolChange }: ScoreEditorProps) {
   const [position, setPosition] = useState<Position>({ x: 100, y: 100 })
+  const [size, setSize] = useState<{ width: number; height: number }>({ width: 400, height: 500 })
   const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 })
-  const [activeTab, setActiveTab] = useState<'notes' | 'dynamics' | 'articulation' | 'text'>('notes')
+  const [activeTab, setActiveTab] = useState<'notes' | 'dynamics' | 'articulation' | 'chords'>('notes')
 
   const popupRef = useRef<HTMLDivElement>(null)
-  const previewRef = useRef<HTMLDivElement>(null)
-
-  // Update local state when prop changes
-  useEffect(() => {
-    setEditedAbc(abcNotation)
-  }, [abcNotation])
-
-  // Render preview when editedAbc changes
-  useEffect(() => {
-    if (isOpen && previewRef.current && (window as any).ABCJS) {
-      try {
-        previewRef.current.innerHTML = ''
-        ;(window as any).ABCJS.renderAbc(previewRef.current, editedAbc, {
-          responsive: 'resize',
-          staffwidth: 400
-        })
-      } catch (e) {
-        console.error('Preview render error:', e)
-      }
-    }
-  }, [editedAbc, isOpen])
 
   // Center popup on open
   useEffect(() => {
     if (isOpen) {
-      const centerX = (window.innerWidth - 600) / 2
-      const centerY = (window.innerHeight - 500) / 2
-      setPosition({ x: Math.max(50, centerX), y: Math.max(50, centerY) })
+      const centerX = (window.innerWidth - 500) / 2
+      setPosition({ x: Math.max(50, centerX), y: 80 })
     }
   }, [isOpen])
 
@@ -71,13 +56,19 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
           y: e.clientY - dragOffset.y
         })
       }
+      if (isResizing) {
+        const newWidth = Math.max(320, e.clientX - position.x)
+        const newHeight = Math.max(300, e.clientY - position.y)
+        setSize({ width: newWidth, height: newHeight })
+      }
     }
 
     const handleMouseUp = () => {
       setIsDragging(false)
+      setIsResizing(false)
     }
 
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     }
@@ -86,121 +77,177 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging, dragOffset])
+  }, [isDragging, isResizing, dragOffset, position.x, position.y])
 
-  const insertAtCursor = (text: string) => {
-    const textarea = document.getElementById('score-editor-textarea') as HTMLTextAreaElement
-    if (!textarea) return
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsResizing(true)
+  }, [])
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const newText = editedAbc.substring(0, start) + text + editedAbc.substring(end)
-    setEditedAbc(newText)
-
-    // Restore cursor position after state update
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + text.length, start + text.length)
-    }, 0)
+  const selectNote = (note: string) => {
+    onToolChange({ ...selectedTool, type: 'note', value: note })
   }
 
-  const handleSave = () => {
-    onSave(editedAbc)
-    onClose()
+  const selectDuration = (duration: string) => {
+    onToolChange({ ...selectedTool, duration })
+  }
+
+  const selectRest = (restValue: string) => {
+    onToolChange({ ...selectedTool, type: 'rest', value: restValue })
+  }
+
+  const selectAccidental = (acc: string) => {
+    onToolChange({ ...selectedTool, type: 'accidental', value: acc })
+  }
+
+  const selectDynamic = (dyn: string) => {
+    onToolChange({ type: 'dynamic', value: dyn, duration: selectedTool.duration })
+  }
+
+  const selectArticulation = (art: string) => {
+    onToolChange({ type: 'articulation', value: art, duration: selectedTool.duration })
+  }
+
+  const selectChord = (chord: string) => {
+    onToolChange({ type: 'chord', value: chord, duration: selectedTool.duration })
+  }
+
+  const selectDelete = () => {
+    onToolChange({ type: 'delete', value: '', duration: '' })
+  }
+
+  const selectPointer = () => {
+    onToolChange({ type: 'select', value: '', duration: '' })
   }
 
   if (!isOpen) return null
 
-  const noteButtons = [
-    { label: 'C', value: 'C' },
-    { label: 'D', value: 'D' },
-    { label: 'E', value: 'E' },
-    { label: 'F', value: 'F' },
-    { label: 'G', value: 'G' },
-    { label: 'A', value: 'A' },
-    { label: 'B', value: 'B' },
-    { label: 'c', value: 'c' },
-    { label: 'd', value: 'd' },
-    { label: 'e', value: 'e' },
-    { label: 'f', value: 'f' },
-    { label: 'g', value: 'g' },
-    { label: 'a', value: 'a' },
-    { label: 'b', value: 'b' },
+  const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+  const notesHigh = ['c', 'd', 'e', 'f', 'g', 'a', 'b']
+
+  // SVG icons for note durations
+  const NoteIcons = {
+    whole: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <ellipse cx="12" cy="12" rx="6" ry="4" fill="none" stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    ),
+    half: (
+      <svg width="20" height="24" viewBox="0 0 20 28" fill="currentColor">
+        <ellipse cx="7" cy="22" rx="5" ry="3.5" fill="none" stroke="currentColor" strokeWidth="2" transform="rotate(-20 7 22)"/>
+        <line x1="12" y1="20" x2="12" y2="2" stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    ),
+    quarter: (
+      <svg width="20" height="24" viewBox="0 0 20 28" fill="currentColor">
+        <ellipse cx="7" cy="22" rx="5" ry="3.5" fill="currentColor" transform="rotate(-20 7 22)"/>
+        <line x1="12" y1="20" x2="12" y2="2" stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    ),
+    eighth: (
+      <svg width="20" height="24" viewBox="0 0 20 28" fill="currentColor">
+        <ellipse cx="7" cy="22" rx="5" ry="3.5" fill="currentColor" transform="rotate(-20 7 22)"/>
+        <line x1="12" y1="20" x2="12" y2="2" stroke="currentColor" strokeWidth="2"/>
+        <path d="M12 2 Q18 6 14 12" fill="none" stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    ),
+    sixteenth: (
+      <svg width="20" height="24" viewBox="0 0 20 28" fill="currentColor">
+        <ellipse cx="7" cy="22" rx="5" ry="3.5" fill="currentColor" transform="rotate(-20 7 22)"/>
+        <line x1="12" y1="20" x2="12" y2="2" stroke="currentColor" strokeWidth="2"/>
+        <path d="M12 2 Q18 5 14 10" fill="none" stroke="currentColor" strokeWidth="2"/>
+        <path d="M12 6 Q18 9 14 14" fill="none" stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    ),
+  }
+
+  const durations = [
+    { icon: NoteIcons.whole, value: '8', title: 'Whole Note' },
+    { icon: NoteIcons.half, value: '4', title: 'Half Note' },
+    { icon: NoteIcons.quarter, value: '2', title: 'Quarter Note' },
+    { icon: NoteIcons.eighth, value: '', title: '8th Note' },
+    { icon: NoteIcons.sixteenth, value: '/2', title: '16th Note' },
   ]
 
-  const durationButtons = [
-    { label: '16th', value: '/2' },
-    { label: '8th', value: '' },
-    { label: 'Qtr', value: '2' },
-    { label: 'Half', value: '4' },
-    { label: 'Whole', value: '8' },
+  // SVG icons for rests
+  const RestIcons = {
+    whole: (
+      <svg width="24" height="20" viewBox="0 0 24 20" fill="currentColor">
+        <rect x="4" y="6" width="16" height="4" fill="currentColor"/>
+      </svg>
+    ),
+    half: (
+      <svg width="24" height="20" viewBox="0 0 24 20" fill="currentColor">
+        <rect x="4" y="10" width="16" height="4" fill="currentColor"/>
+      </svg>
+    ),
+    quarter: (
+      <svg width="20" height="28" viewBox="0 0 20 28" fill="currentColor">
+        <path d="M12 2 L8 8 L12 10 L8 16 L10 18 Q6 22 8 26 Q12 24 10 20 L14 14 L10 12 L14 6 Z" fill="currentColor"/>
+      </svg>
+    ),
+    eighth: (
+      <svg width="20" height="28" viewBox="0 0 20 28" fill="currentColor">
+        <path d="M14 4 Q8 8 10 12 L8 12 Q6 16 10 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+        <circle cx="12" cy="6" r="2.5" fill="currentColor"/>
+      </svg>
+    ),
+    sixteenth: (
+      <svg width="20" height="28" viewBox="0 0 20 28" fill="currentColor">
+        <path d="M14 2 Q8 6 10 10 L8 10 Q6 14 10 16 L8 16 Q6 20 10 22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="12" cy="4" r="2" fill="currentColor"/>
+        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+      </svg>
+    ),
+  }
+
+  const rests = [
+    { icon: RestIcons.whole, value: 'z8', title: 'Whole Rest' },
+    { icon: RestIcons.half, value: 'z4', title: 'Half Rest' },
+    { icon: RestIcons.quarter, value: 'z2', title: 'Quarter Rest' },
+    { icon: RestIcons.eighth, value: 'z', title: '8th Rest' },
+    { icon: RestIcons.sixteenth, value: 'z/2', title: '16th Rest' },
   ]
 
-  const accidentalButtons = [
-    { label: '#', value: '^' },
-    { label: 'b', value: '_' },
-    { label: 'Natural', value: '=' },
+  const accidentals = [
+    { label: '♯', value: '^', title: 'Sharp' },
+    { label: '♭', value: '_', title: 'Flat' },
+    { label: '♮', value: '=', title: 'Natural' },
   ]
 
-  const restButtons = [
-    { label: '16th Rest', value: 'z/2' },
-    { label: '8th Rest', value: 'z' },
-    { label: 'Qtr Rest', value: 'z2' },
-    { label: 'Half Rest', value: 'z4' },
-    { label: 'Whole Rest', value: 'z8' },
-  ]
-
-  const dynamicButtons = [
+  const dynamics = [
     { label: 'pp', value: '!pp!' },
     { label: 'p', value: '!p!' },
     { label: 'mp', value: '!mp!' },
     { label: 'mf', value: '!mf!' },
     { label: 'f', value: '!f!' },
     { label: 'ff', value: '!ff!' },
-    { label: 'cresc', value: '!crescendo(!' },
-    { label: 'decresc', value: '!diminuendo(!' },
   ]
 
-  const articulationButtons = [
-    { label: 'Staccato', value: '.' },
-    { label: 'Accent', value: '!accent!' },
-    { label: 'Tenuto', value: '!tenuto!' },
-    { label: 'Fermata', value: '!fermata!' },
-    { label: 'Trill', value: '!trill!' },
-    { label: 'Turn', value: '!turn!' },
-    { label: 'Mordent', value: '!mordent!' },
-    { label: 'Slide', value: '!slide!' },
+  const articulations = [
+    { label: '.', value: '.', title: 'Staccato' },
+    { label: '>', value: '!accent!', title: 'Accent' },
+    { label: '−', value: '!tenuto!', title: 'Tenuto' },
+    { label: '𝄐', value: '!fermata!', title: 'Fermata' },
+    { label: 'tr', value: '!trill!', title: 'Trill' },
   ]
 
-  const structureButtons = [
-    { label: 'Bar', value: '|' },
-    { label: 'Double Bar', value: '||' },
-    { label: 'Repeat Start', value: '|:' },
-    { label: 'Repeat End', value: ':|' },
-    { label: 'End Bar', value: '|]' },
-    { label: 'Tie', value: '-' },
-    { label: 'Slur Start', value: '(' },
-    { label: 'Slur End', value: ')' },
-  ]
-
-  const chordButtons = [
-    { label: 'Cmaj7', value: '"Cmaj7"' },
-    { label: 'Dm7', value: '"Dm7"' },
-    { label: 'G7', value: '"G7"' },
-    { label: 'Am7', value: '"Am7"' },
-    { label: 'Em7', value: '"Em7"' },
-    { label: 'Fmaj7', value: '"Fmaj7"' },
-    { label: 'Bm7b5', value: '"Bm7b5"' },
+  const chords = [
+    'Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'G7', 'Am7', 'Bm7b5',
+    'C7', 'Cm7', 'Cdim7', 'Caug'
   ]
 
   return (
     <div className="score-editor-overlay">
       <div
         ref={popupRef}
-        className="score-editor-popup"
+        className="score-editor-popup score-editor-compact"
         style={{
           left: position.x,
           top: position.y,
+          width: size.width,
+          height: size.height,
           cursor: isDragging ? 'grabbing' : 'default'
         }}
         onMouseDown={handleMouseDown}
@@ -208,11 +255,20 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
         <div className="editor-header">
           <div className="editor-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 3v18"/>
-              <path d="M8 21h8"/>
-              <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
             </svg>
-            <span>SCORE EDITOR</span>
+            <span>NOTE PALETTE</span>
+          </div>
+          <div className="editor-mode-indicator">
+            {selectedTool.type === 'select' && 'SELECT MODE'}
+            {selectedTool.type === 'delete' && 'DELETE MODE'}
+            {selectedTool.type === 'note' && `NOTE: ${selectedTool.value.toUpperCase()}`}
+            {selectedTool.type === 'rest' && 'REST'}
+            {selectedTool.type === 'chord' && `CHORD: ${selectedTool.value}`}
+            {selectedTool.type === 'dynamic' && `DYNAMIC: ${selectedTool.value.replace(/!/g, '')}`}
+            {selectedTool.type === 'articulation' && 'ARTICULATION'}
           </div>
           <button className="editor-close" onClick={onClose}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -243,8 +299,8 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
               Articulation
             </button>
             <button
-              className={`toolbar-tab ${activeTab === 'text' ? 'active' : ''}`}
-              onClick={() => setActiveTab('text')}
+              className={`toolbar-tab ${activeTab === 'chords' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chords')}
             >
               Chords
             </button>
@@ -254,72 +310,111 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
         <div className="editor-palette">
           {activeTab === 'notes' && (
             <>
+              {/* Tool buttons */}
               <div className="palette-section">
-                <div className="palette-label">Notes (Uppercase=Low, Lowercase=High)</div>
+                <div className="palette-label">Tools</div>
                 <div className="palette-buttons">
-                  {noteButtons.map((btn) => (
-                    <button
-                      key={btn.label}
-                      className="palette-btn note-btn"
-                      onClick={() => insertAtCursor(btn.value)}
-                    >
-                      {btn.label}
-                    </button>
-                  ))}
+                  <button
+                    className={`palette-btn tool-btn ${selectedTool.type === 'select' ? 'selected' : ''}`}
+                    onClick={selectPointer}
+                    title="Select"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                    </svg>
+                  </button>
+                  <button
+                    className={`palette-btn tool-btn ${selectedTool.type === 'delete' ? 'selected' : ''}`}
+                    onClick={selectDelete}
+                    title="Delete"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
+
+              {/* Duration */}
               <div className="palette-section">
                 <div className="palette-label">Duration</div>
                 <div className="palette-buttons">
-                  {durationButtons.map((btn) => (
+                  {durations.map((d) => (
                     <button
-                      key={btn.label}
-                      className="palette-btn"
-                      onClick={() => insertAtCursor(btn.value)}
+                      key={d.value}
+                      className={`palette-btn duration-btn ${selectedTool.duration === d.value ? 'selected' : ''}`}
+                      onClick={() => selectDuration(d.value)}
+                      title={d.title}
                     >
-                      {btn.label}
+                      {d.icon}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Accidentals */}
               <div className="palette-section">
                 <div className="palette-label">Accidentals</div>
                 <div className="palette-buttons">
-                  {accidentalButtons.map((btn) => (
+                  {accidentals.map((a) => (
                     <button
-                      key={btn.label}
-                      className="palette-btn"
-                      onClick={() => insertAtCursor(btn.value)}
+                      key={a.value}
+                      className={`palette-btn ${selectedTool.type === 'accidental' && selectedTool.value === a.value ? 'selected' : ''}`}
+                      onClick={() => selectAccidental(a.value)}
+                      title={a.title}
                     >
-                      {btn.label}
+                      {a.label}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Notes - Low Octave */}
+              <div className="palette-section">
+                <div className="palette-label">Low Octave</div>
+                <div className="palette-buttons">
+                  {notes.map((note) => (
+                    <button
+                      key={note}
+                      className={`palette-btn note-btn ${selectedTool.type === 'note' && selectedTool.value === note ? 'selected' : ''}`}
+                      onClick={() => selectNote(note)}
+                    >
+                      {note}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes - High Octave */}
+              <div className="palette-section">
+                <div className="palette-label">High Octave</div>
+                <div className="palette-buttons">
+                  {notesHigh.map((note) => (
+                    <button
+                      key={note}
+                      className={`palette-btn note-btn ${selectedTool.type === 'note' && selectedTool.value === note ? 'selected' : ''}`}
+                      onClick={() => selectNote(note)}
+                    >
+                      {note}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rests */}
               <div className="palette-section">
                 <div className="palette-label">Rests</div>
                 <div className="palette-buttons">
-                  {restButtons.map((btn) => (
+                  {rests.map((r) => (
                     <button
-                      key={btn.label}
-                      className="palette-btn"
-                      onClick={() => insertAtCursor(btn.value)}
+                      key={r.value}
+                      className={`palette-btn duration-btn ${selectedTool.type === 'rest' && selectedTool.value === r.value ? 'selected' : ''}`}
+                      onClick={() => selectRest(r.value)}
+                      title={r.title}
                     >
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="palette-section">
-                <div className="palette-label">Structure</div>
-                <div className="palette-buttons">
-                  {structureButtons.map((btn) => (
-                    <button
-                      key={btn.label}
-                      className="palette-btn"
-                      onClick={() => insertAtCursor(btn.value)}
-                    >
-                      {btn.label}
+                      {r.icon}
                     </button>
                   ))}
                 </div>
@@ -329,15 +424,15 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
 
           {activeTab === 'dynamics' && (
             <div className="palette-section">
-              <div className="palette-label">Dynamics</div>
+              <div className="palette-label">Dynamics (click on score to add)</div>
               <div className="palette-buttons">
-                {dynamicButtons.map((btn) => (
+                {dynamics.map((d) => (
                   <button
-                    key={btn.label}
-                    className="palette-btn"
-                    onClick={() => insertAtCursor(btn.value)}
+                    key={d.value}
+                    className={`palette-btn ${selectedTool.type === 'dynamic' && selectedTool.value === d.value ? 'selected' : ''}`}
+                    onClick={() => selectDynamic(d.value)}
                   >
-                    {btn.label}
+                    {d.label}
                   </button>
                 ))}
               </div>
@@ -346,32 +441,33 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
 
           {activeTab === 'articulation' && (
             <div className="palette-section">
-              <div className="palette-label">Articulations & Ornaments</div>
+              <div className="palette-label">Articulations (click on score to add)</div>
               <div className="palette-buttons">
-                {articulationButtons.map((btn) => (
+                {articulations.map((a) => (
                   <button
-                    key={btn.label}
-                    className="palette-btn"
-                    onClick={() => insertAtCursor(btn.value)}
+                    key={a.value}
+                    className={`palette-btn ${selectedTool.type === 'articulation' && selectedTool.value === a.value ? 'selected' : ''}`}
+                    onClick={() => selectArticulation(a.value)}
+                    title={a.title}
                   >
-                    {btn.label}
+                    {a.label}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {activeTab === 'text' && (
+          {activeTab === 'chords' && (
             <div className="palette-section">
-              <div className="palette-label">Common Jazz Chords</div>
-              <div className="palette-buttons">
-                {chordButtons.map((btn) => (
+              <div className="palette-label">Jazz Chords (click on score to add)</div>
+              <div className="palette-buttons chords-grid">
+                {chords.map((chord) => (
                   <button
-                    key={btn.label}
-                    className="palette-btn"
-                    onClick={() => insertAtCursor(btn.value)}
+                    key={chord}
+                    className={`palette-btn ${selectedTool.type === 'chord' && selectedTool.value === chord ? 'selected' : ''}`}
+                    onClick={() => selectChord(chord)}
                   >
-                    {btn.label}
+                    {chord}
                   </button>
                 ))}
               </div>
@@ -379,31 +475,15 @@ export default function ScoreEditor({ isOpen, onClose, abcNotation, onSave }: Sc
           )}
         </div>
 
-        <div className="editor-content">
-          <div className="editor-preview-section">
-            <div className="preview-label">PREVIEW</div>
-            <div ref={previewRef} className="editor-preview"></div>
-          </div>
-          <div className="editor-text-section">
-            <div className="text-label">ABC NOTATION</div>
-            <textarea
-              id="score-editor-textarea"
-              className="editor-textarea"
-              value={editedAbc}
-              onChange={(e) => setEditedAbc(e.target.value)}
-              spellCheck={false}
-            />
-          </div>
+        <div className="editor-footer-hint">
+          Click on the score to place notes
         </div>
 
-        <div className="editor-footer">
-          <button className="editor-btn cancel" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="editor-btn save" onClick={handleSave}>
-            Apply Changes
-          </button>
-        </div>
+        {/* Resize handle */}
+        <div
+          className="resize-handle"
+          onMouseDown={handleResizeStart}
+        />
       </div>
     </div>
   )

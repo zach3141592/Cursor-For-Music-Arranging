@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { jsPDF } from 'jspdf'
 import { preprocessImage } from '../lib/imagePreprocessing'
-import ScoreEditor from '../components/ScoreEditor'
+import ScoreEditor, { SelectedTool } from '../components/ScoreEditor'
 
 declare global {
   interface Window {
@@ -37,6 +37,11 @@ export default function Home() {
 
   // Score editor state
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [selectedTool, setSelectedTool] = useState<SelectedTool>({
+    type: 'note',
+    value: 'C',
+    duration: '2' // quarter note
+  })
 
   const originalScoreRef = useRef<HTMLDivElement>(null)
   const originalSynthControlRef = useRef<any>(null)
@@ -60,30 +65,102 @@ export default function Home() {
     }
   }, [])
 
-  // Auto-render when ABC input changes
-  useEffect(() => {
-    if (abcjsLoaded && abcInput.trim()) {
-      renderAbc(originalScoreRef.current, abcInput)
-    }
-  }, [abcInput, abcjsLoaded])
-
   const showStatus = (type: 'success' | 'error' | 'loading', message: string) => {
     setStatus({ type, message })
     setTimeout(() => setStatus(null), 5000)
   }
 
-  const renderAbc = (targetEl: HTMLElement | null, abcText: string) => {
+  // Handle click on score element
+  const handleScoreClick = useCallback((abcElem: any, _tuneNumber: number, _classes: string, _analysis: any, _drag: any, _mouseEvent: MouseEvent) => {
+    if (!isEditorOpen) return // Only handle clicks when editor is open
+
+    if (selectedTool.type === 'select') return // Select mode does nothing for now
+
+    if (!abcElem) return
+
+    const startChar = abcElem.startChar
+    const endChar = abcElem.endChar
+
+    if (startChar === undefined || endChar === undefined) return
+
+    setAbcInput(prevAbc => {
+      const before = prevAbc.substring(0, startChar)
+      const selected = prevAbc.substring(startChar, endChar)
+      const after = prevAbc.substring(endChar)
+
+      if (selectedTool.type === 'delete') {
+        // Delete the clicked element
+        return before + after
+      }
+
+      if (selectedTool.type === 'note' || selectedTool.type === 'rest') {
+        // Build the new note/rest
+        let newElement = ''
+        if (selectedTool.type === 'rest') {
+          newElement = selectedTool.value // Rest value already includes duration (e.g., 'z2', 'z4')
+        } else {
+          newElement = selectedTool.value + selectedTool.duration
+        }
+        // Replace the clicked element with the new one
+        return before + newElement + after
+      }
+
+      if (selectedTool.type === 'accidental') {
+        // Add accidental to existing note
+        const noteMatch = selected.match(/^([_^=]*)([A-Ga-g])(.*)$/)
+        if (noteMatch) {
+          const newNote = selectedTool.value + noteMatch[2] + noteMatch[3]
+          return before + newNote + after
+        }
+        return prevAbc
+      }
+
+      if (selectedTool.type === 'chord') {
+        // Add chord symbol before the note
+        const chordSymbol = `"${selectedTool.value}"`
+        return before + chordSymbol + selected + after
+      }
+
+      if (selectedTool.type === 'dynamic') {
+        // Add dynamic before the note
+        return before + selectedTool.value + selected + after
+      }
+
+      if (selectedTool.type === 'articulation') {
+        // Add articulation to the note
+        return before + selectedTool.value + selected + after
+      }
+
+      return prevAbc
+    })
+  }, [isEditorOpen, selectedTool])
+
+  const renderAbc = useCallback((targetEl: HTMLElement | null, abcText: string, withClickListener: boolean = false) => {
     if (!targetEl || !window.ABCJS) return null
-    
+
     try {
       targetEl.innerHTML = ''
-      return window.ABCJS.renderAbc(targetEl, abcText, { responsive: 'resize' })
+      const options: any = { responsive: 'resize' }
+
+      if (withClickListener && isEditorOpen) {
+        options.clickListener = handleScoreClick
+        options.add_classes = true
+      }
+
+      return window.ABCJS.renderAbc(targetEl, abcText, options)
     } catch (e) {
       console.error(e)
       showStatus('error', 'Render error: ' + (e as Error).message)
       return null
     }
-  }
+  }, [handleScoreClick, isEditorOpen])
+
+  // Auto-render when ABC input changes
+  useEffect(() => {
+    if (abcjsLoaded && abcInput.trim()) {
+      renderAbc(originalScoreRef.current, abcInput, true)
+    }
+  }, [abcInput, abcjsLoaded, isEditorOpen, renderAbc])
 
   const playScore = async (target: HTMLElement | null, abcText: string, setControl: (control: any) => void) => {
     if (!target || !window.ABCJS) return
@@ -423,7 +500,7 @@ export default function Home() {
               </div>
             </div>
             <div className="sheet-music-container">
-              <div ref={originalScoreRef} className="score-render">
+              <div ref={originalScoreRef} className={`score-render ${isEditorOpen ? 'editing' : ''}`}>
                 {!abcInput && (
                   <div className="empty-state">
                     <p>AWAITING INPUT SEQUENCE...</p>
@@ -508,8 +585,8 @@ export default function Home() {
       <ScoreEditor
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
-        abcNotation={abcInput}
-        onSave={(newAbc) => setAbcInput(newAbc)}
+        selectedTool={selectedTool}
+        onToolChange={setSelectedTool}
       />
     </div>
   )

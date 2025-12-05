@@ -1142,10 +1142,8 @@ html, body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(2px);
   z-index: 1000;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .score-editor-popup {
@@ -1159,6 +1157,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  pointer-events: auto;
 }
 
 .editor-header {
@@ -1446,4 +1445,244 @@ html, body {
 
 .btn-edit svg {
   flex-shrink: 0;
+}
+
+/* Compact Score Editor */
+.score-editor-compact {
+  min-width: 320px;
+  min-height: 300px;
+  max-height: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.score-editor-compact .editor-header {
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  padding: 10px 14px;
+  border-radius: 8px 8px 0 0;
+}
+
+.score-editor-compact .editor-title {
+  color: #fff;
+}
+
+.score-editor-compact .editor-title svg {
+  color: #888;
+}
+
+.score-editor-compact .editor-close {
+  background: transparent;
+  border: none;
+  color: #666;
+  width: 24px;
+  height: 24px;
+}
+
+.score-editor-compact .editor-close:hover {
+  background: #dc2626;
+  color: white;
+  border-radius: 4px;
+}
+
+.score-editor-compact .editor-toolbar {
+  background: #f5f5f5;
+  padding: 8px 14px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.score-editor-compact .toolbar-tab {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+  border: none;
+}
+
+.score-editor-compact .toolbar-tab:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.score-editor-compact .toolbar-tab.active {
+  background: #333;
+  color: #fff;
+  box-shadow: none;
+}
+
+.score-editor-compact .editor-palette {
+  max-height: none;
+  padding: 14px;
+  background: #fff;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.editor-mode-indicator {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: #999;
+  background: #2a2a2a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: none;
+}
+
+.score-editor-compact .palette-section {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.score-editor-compact .palette-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.score-editor-compact .palette-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #999;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.score-editor-compact .palette-buttons {
+  gap: 4px;
+}
+
+.score-editor-compact .palette-btn {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #333;
+  transition: all 0.1s ease;
+  box-shadow: none;
+}
+
+.score-editor-compact .palette-btn:hover {
+  background: #eee;
+  border-color: #ccc;
+  color: #000;
+  transform: none;
+  box-shadow: none;
+}
+
+.palette-btn.selected {
+  background: #333;
+  border-color: #333;
+  color: white;
+  box-shadow: none;
+}
+
+.palette-btn.selected:hover {
+  background: #444;
+  border-color: #444;
+  color: white;
+  transform: none;
+  box-shadow: none;
+}
+
+.palette-btn.tool-btn {
+  padding: 8px 10px;
+  min-width: 40px;
+}
+
+.palette-btn.tool-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.palette-btn.duration-btn {
+  min-width: 44px;
+  height: 44px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palette-btn.duration-btn svg {
+  width: 20px;
+  height: 24px;
+}
+
+.palette-btn.note-btn {
+  min-width: 36px;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+}
+
+.chords-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.chords-grid .palette-btn {
+  font-size: 11px;
+  padding: 8px 4px;
+}
+
+.editor-footer-hint {
+  padding: 8px 14px;
+  background: #f5f5f5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #888;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-top: 1px solid #e0e0e0;
+}
+
+.editor-footer-hint::before {
+  content: '';
+}
+
+/* Resize handle */
+.score-editor-compact .resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #ccc 50%, #ccc 60%, transparent 60%, transparent 70%, #ccc 70%, #ccc 80%, transparent 80%);
+  border-radius: 0 0 8px 0;
+}
+
+/* Clickable score styling when editor is open */
+.score-render.editing svg {
+  cursor: crosshair;
+}
+
+.score-render svg .abcjs-note,
+.score-render svg .abcjs-rest {
+  cursor: pointer;
+}
+
+.score-render svg .abcjs-note:hover,
+.score-render svg .abcjs-rest:hover {
+  filter: brightness(0.7);
 }
