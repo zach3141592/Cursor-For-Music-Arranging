@@ -9,6 +9,101 @@ interface ChatMessage {
   content: string
 }
 
+// Web search function using DuckDuckGo (no API key required)
+async function searchWeb(query: string): Promise<string> {
+  try {
+    // Use DuckDuckGo HTML search
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Search error: ${response.status}`)
+    }
+
+    const html = await response.text()
+
+    // Parse results from HTML
+    const results: string[] = []
+
+    // Extract result snippets using regex (simple parsing)
+    const snippetRegex = /<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi
+    const titleRegex = /<a class="result__a"[^>]*>([\s\S]*?)<\/a>/gi
+
+    let match: RegExpExecArray | null
+    const titles: string[] = []
+    const snippets: string[] = []
+
+    while ((match = titleRegex.exec(html)) !== null && titles.length < 5) {
+      // Clean HTML tags and entities
+      const title = match[1]
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#x27;/g, "'")
+        .trim()
+      if (title) titles.push(title)
+    }
+
+    while ((match = snippetRegex.exec(html)) !== null && snippets.length < 5) {
+      const snippet = match[1]
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#x27;/g, "'")
+        .trim()
+      if (snippet) snippets.push(snippet)
+    }
+
+    // Combine titles and snippets
+    for (let i = 0; i < Math.max(titles.length, snippets.length); i++) {
+      const title = titles[i] || ''
+      const snippet = snippets[i] || ''
+      if (title || snippet) {
+        results.push(`${title}: ${snippet}`)
+      }
+    }
+
+    if (results.length === 0) {
+      return 'No search results found.'
+    }
+
+    return `Search results for "${query}":\n\n${results.join('\n\n')}`
+  } catch (error) {
+    console.error('Web search error:', error)
+    return `Search failed: ${(error as Error).message}. Proceeding with general knowledge.`
+  }
+}
+
+// Define the search tool for OpenAI function calling
+const tools: OpenAI.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'search_song_info',
+      description: 'Search the web for information about a specific song, including chord progressions, key, melody notes, and structure. Use this when the user asks for a lead sheet of a known song (jazz standard, pop song, etc.) to get accurate chord changes and song information.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The search query. Include the song name and what information you need (e.g., "Autumn Leaves jazz chord progression key" or "Blue Bossa chords melody")'
+          }
+        },
+        required: ['query']
+      }
+    }
+  }
+]
+
 export async function POST(request: Request) {
   try {
     const { message, currentAbc, history } = await request.json()
@@ -18,6 +113,8 @@ export async function POST(request: Request) {
     }
 
     const systemPrompt = `You are an expert music composer and arranger specializing in creating lead sheets in ABC notation format. Your role is to help users create, modify, and improve music notation.
+
+IMPORTANT: When a user asks for a lead sheet of a KNOWN SONG (jazz standard, pop song, classical piece, etc.), you MUST use the search_song_info tool first to look up the correct chord progression, key, and melody information. Do NOT guess or make up chord changes for real songs - always search first to ensure accuracy.
 
 ABC Notation Guidelines:
 - Always start with X: (reference number), T: (title), M: (meter), L: (default note length), K: (key)
@@ -52,18 +149,45 @@ Lead Sheet Specific:
 - Blues typically uses dominant 7th chords (C7, F7, G7)
 - Jazz standards often use maj7, m7, and dominant 7th chords
 
+Jazz Lead Sheet Best Practices (from Learn Jazz Standards):
+- Keep it simple and organized
+- Mark sections clearly (A, B, Coda, etc.)
+- Keep it on one page if possible
+- Write melody clearly so players can easily read on the spot
+- Chord symbols go above the staff
+
+Jazz Chord Symbol Standards:
+- Major 7: Cmaj7 or use triangle symbol description
+- Minor 7: Cm7 or C-7
+- Dominant 7: C7 (the default "7" chord in jazz)
+- Half-diminished (m7b5): Cm7b5 or Cø
+- Diminished 7: Cdim7 or Co7
+- Jazz often abbreviates to just "7" even if extensions (9, 11, 13) are implied
+- Players have freedom to add extensions and alterations
+
+Swing vs Straight Time:
+- For swing feel, indicate "Swing" or "Medium Swing" at the top
+- Don't notate triplet feel - just write regular eighth notes with swing indication
+- For straight/even eighths, indicate "Straight 8ths" or "Even 8ths"
+
+Turnarounds:
+- Turnaround chords at the end lead back to the top for repeats
+- Common turnarounds: I-VI-ii-V (e.g., Cmaj7-A7-Dm7-G7)
+- On the final chorus, skip the turnaround and end on the final chord
+
 When the user asks you to create or modify music:
-1. Generate valid ABC notation
-2. Explain briefly what you created/changed
-3. Return the ABC in a code block marked with \`\`\`abc
+1. If it's a KNOWN SONG, use search_song_info first to get accurate information
+2. Generate valid ABC notation based on real chord progressions and melody
+3. Explain briefly what you created/changed
+4. Return the ABC in a code block marked with \`\`\`abc
 
 Current ABC notation (if any):
 ${currentAbc || 'None - starting fresh'}
 
-Be creative but musically coherent. Match the style the user requests.`
+Be creative but musically coherent. For known songs, be ACCURATE to the original.`
 
     // Build conversation history for context
-    const messages: { role: 'system' | 'user' | 'assistant', content: string }[] = [
+    const messages: OpenAI.ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt }
     ]
 
@@ -79,14 +203,54 @@ Be creative but musically coherent. Match the style the user requests.`
     // Add current message
     messages.push({ role: 'user', content: message })
 
-    const completion = await openai.chat.completions.create({
+    // First API call - may trigger function calling
+    let completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages,
+      tools,
+      tool_choice: 'auto',
       max_tokens: 2000,
       temperature: 0.7,
     })
 
-    const responseText = completion.choices[0]?.message?.content?.trim()
+    let responseMessage = completion.choices[0]?.message
+
+    // Handle function calls (tool use)
+    while (responseMessage?.tool_calls && responseMessage.tool_calls.length > 0) {
+      // Add the assistant's message with tool calls
+      messages.push(responseMessage)
+
+      // Process each tool call
+      for (const toolCall of responseMessage.tool_calls) {
+        if (toolCall.function.name === 'search_song_info') {
+          const args = JSON.parse(toolCall.function.arguments)
+          console.log('Searching for:', args.query)
+
+          const searchResult = await searchWeb(args.query)
+
+          // Add the tool response
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: searchResult
+          })
+        }
+      }
+
+      // Get the next response after tool calls
+      completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages,
+        tools,
+        tool_choice: 'auto',
+        max_tokens: 2000,
+        temperature: 0.7,
+      })
+
+      responseMessage = completion.choices[0]?.message
+    }
+
+    const responseText = responseMessage?.content?.trim()
 
     if (!responseText) {
       throw new Error('No response from OpenAI')
