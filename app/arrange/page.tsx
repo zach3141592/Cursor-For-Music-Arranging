@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { jsPDF } from 'jspdf'
-import { preprocessImage, quickQualityCheck, type QualityReport } from '../lib/imagePreprocessing'
+import { preprocessImage } from '../lib/imagePreprocessing'
 
 declare global {
   interface Window {
@@ -15,17 +15,25 @@ const defaultABC = `X: 1
 T: YOUR LEAD SHEET
 `
 
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export default function Home() {
   const [abcInput, setAbcInput] = useState(defaultABC)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [imageQuality, setImageQuality] = useState<QualityReport | null>(null)
-  const [processingInfo, setProcessingInfo] = useState<string[]>([])
   const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading', message: string} | null>(null)
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [isChatLoading, setIsChatLoading] = useState(false)
 
   const originalScoreRef = useRef<HTMLDivElement>(null)
   const originalSynthControlRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   const [abcjsLoaded, setAbcjsLoaded] = useState(false)
 
@@ -194,9 +202,7 @@ export default function Home() {
     }
 
     setIsUploading(true)
-    setImageQuality(null)
-    setProcessingInfo([])
-    showStatus('loading', 'Analyzing image quality...')
+    showStatus('loading', 'Processing image...')
 
     try {
       // Convert file to data URL
@@ -207,11 +213,6 @@ export default function Home() {
         reader.readAsDataURL(file)
       })
 
-      // Quick quality check first
-      showStatus('loading', 'Checking image quality...')
-      const qualityCheck = await quickQualityCheck(originalDataUrl)
-      setImageQuality(qualityCheck)
-
       // Preprocess the image (resize, enhance contrast)
       showStatus('loading', 'Optimizing image for recognition...')
       const preprocessResult = await preprocessImage(originalDataUrl, {
@@ -220,20 +221,12 @@ export default function Home() {
         contrastFactor: 1.3
       })
 
-      setProcessingInfo(preprocessResult.processingApplied)
-      setUploadedImage(preprocessResult.processedDataUrl)
-
       // Extract base64 from processed data URL
       const base64 = preprocessResult.processedDataUrl.split(',')[1]
       const mimeType = preprocessResult.processedDataUrl.split(';')[0].split(':')[1]
 
-      // Show quality warnings if any
-      if (qualityCheck.warnings.length > 0) {
-        console.log('Quality warnings:', qualityCheck.warnings)
-      }
-
-      // Send to API with two-pass verification
-      showStatus('loading', 'AI is reading the sheet music (Pass 1 of 2)...')
+      // Send to API
+      showStatus('loading', 'AI is reading the sheet music...')
 
       const response = await fetch('/api/read-music', {
         method: 'POST',
@@ -254,17 +247,7 @@ export default function Home() {
 
       if (data.abc) {
         setAbcInput(data.abc)
-        // Automatically render the result
-        setTimeout(() => {
-          renderAbc(originalScoreRef.current, data.abc)
-        }, 100)
-
-        // Build success message with details
-        let successMsg = 'Sheet music converted to ABC notation!'
-        if (data.fixes && data.fixes.length > 0) {
-          successMsg += ` (${data.fixes.length} auto-corrections applied)`
-        }
-        showStatus('success', successMsg)
+        showStatus('success', 'Sheet music converted to ABC notation!')
       } else {
         throw new Error('No ABC notation returned')
       }
@@ -284,11 +267,52 @@ export default function Home() {
     fileInputRef.current?.click()
   }
 
-  const clearUploadedImage = () => {
-    setUploadedImage(null)
-    setImageQuality(null)
-    setProcessingInfo([])
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!chatInput.trim() || isChatLoading) return
+
+    const userMessage = chatInput.trim()
+    setChatInput('')
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    setIsChatLoading(true)
+
+    try {
+      const response = await fetch('/api/chat-music', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          currentAbc: abcInput,
+          history: chatMessages
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to get response')
+
+      const data = await response.json()
+
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.message }])
+
+      if (data.abc) {
+        setAbcInput(data.abc)
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.'
+      }])
+    } finally {
+      setIsChatLoading(false)
+    }
   }
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    }
+  }, [chatMessages])
 
   return (
     <div className="dashboard">
@@ -320,8 +344,8 @@ export default function Home() {
       )}
 
       <main className="dashboard-main">
-        {/* Main Content Area - Split View */}
-        <div className="content-area">
+        {/* Three Column Layout */}
+        <div className="three-column">
           {/* ABC Notation Panel */}
           <section className="notation-panel">
             <div className="panel-header">
@@ -389,36 +413,71 @@ export default function Home() {
               </div>
             </div>
           </section>
-        </div>
 
-        {/* Sidebar */}
-        <aside className="sidebar">
-          <div className="sidebar-section">
-            {uploadedImage && (
-              <div className="sidebar-preview">
-                <div className="preview-header">
-                  <span>PREVIEW</span>
-                  <button className="btn-icon btn-close" onClick={clearUploadedImage} title="Clear">×</button>
+          {/* AI Chat Panel */}
+          <section className="chat-panel">
+          <div className="panel-header">
+            <h2>AI_COMPOSER // CHAT</h2>
+          </div>
+          <div className="chat-container" ref={chatContainerRef}>
+            {chatMessages.length === 0 ? (
+              <div className="chat-empty">
+                <p>Describe the music you want to create...</p>
+                <div className="chat-suggestions">
+                  <button onClick={() => setChatInput('Create a 12-bar blues in C major')}>
+                    12-bar blues in C
+                  </button>
+                  <button onClick={() => setChatInput('Write a simple waltz in G major, 16 bars')}>
+                    Simple waltz in G
+                  </button>
+                  <button onClick={() => setChatInput('Create a jazz lead sheet with ii-V-I progression')}>
+                    Jazz ii-V-I progression
+                  </button>
                 </div>
-                <img src={uploadedImage} alt="Uploaded sheet music" />
-
-                {(processingInfo.length > 0 || (imageQuality && imageQuality.warnings.length > 0)) && (
-                  <div className="processing-terminal">
-                    <div className="terminal-line">System diagnostic...</div>
-                    {imageQuality?.warnings.map((warning, i) => (
-                      <div key={`warn-${i}`} className="terminal-line" style={{ color: 'var(--warning)' }}>WARN: {warning}</div>
-                    ))}
-                    {processingInfo.map((info, i) => (
-                      <div key={`proc-${i}`} className="terminal-line">EXEC: {info}</div>
-                    ))}
-                    <div className="terminal-line">Ready.</div>
+              </div>
+            ) : (
+              chatMessages.map((msg, i) => (
+                <div key={i} className={`chat-message ${msg.role}`}>
+                  <div className="chat-message-label">
+                    {msg.role === 'user' ? 'YOU' : 'AI'}
                   </div>
-                )}
+                  <div className="chat-message-content">{msg.content}</div>
+                </div>
+              ))
+            )}
+            {isChatLoading && (
+              <div className="chat-message assistant">
+                <div className="chat-message-label">AI</div>
+                <div className="chat-message-content chat-loading">
+                  <span className="loading-dot">.</span>
+                  <span className="loading-dot">.</span>
+                  <span className="loading-dot">.</span>
+                </div>
               </div>
             )}
-
           </div>
-        </aside>
+          <form className="chat-input-form" onSubmit={handleChatSubmit}>
+            <input
+              type="text"
+              className="chat-input"
+              placeholder="Describe what you want to create..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              disabled={isChatLoading}
+            />
+            <button
+              type="submit"
+              className="chat-submit"
+              disabled={isChatLoading || !chatInput.trim()}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </form>
+        </section>
+        </div>
       </main>
     </div>
   )
