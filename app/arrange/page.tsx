@@ -629,7 +629,7 @@ export default function Home() {
           {/* ABC Notation Panel */}
           <section className="notation-panel">
             <div className="panel-header">
-              <h2>SOURCE_CODE // ABCJS</h2>
+              <h2>SOURCE_CODE // <a href="https://docs.abcjs.net/overview/abc-notation.html" target="_blank" rel="noopener noreferrer">ABCJS</a></h2>
               <button
                 className="btn-header-upload"
                 onClick={handleUploadClick}
