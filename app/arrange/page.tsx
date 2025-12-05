@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { jsPDF } from 'jspdf'
 import { preprocessImage } from '../lib/imagePreprocessing'
+import ScoreEditor from '../components/ScoreEditor'
 
 declare global {
   interface Window {
@@ -13,6 +14,10 @@ declare global {
 
 const defaultABC = `X: 1
 T: YOUR LEAD SHEET
+M: 4/4
+L: 1/4
+K: C
+z4 | z4 | z4 | z4 | z4 | z4 | z4 | z4 |]
 `
 
 interface ChatMessage {
@@ -29,6 +34,9 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [isChatLoading, setIsChatLoading] = useState(false)
+
+  // Score editor state
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
 
   const originalScoreRef = useRef<HTMLDivElement>(null)
   const originalSynthControlRef = useRef<any>(null)
@@ -385,6 +393,17 @@ export default function Home() {
             <div className="panel-header">
               <h2>VISUAL_RENDER // SCORE</h2>
               <div className="header-controls">
+                <button
+                  className="btn-edit"
+                  onClick={() => setIsEditorOpen(true)}
+                  title="Edit Score"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  <span>EDIT</span>
+                </button>
                 <div className="playback-buttons">
                   <button className="btn-icon" onClick={handlePlayOriginal} title="Play">▶</button>
                   <button className="btn-icon" onClick={handleStopOriginal} title="Stop">■</button>
@@ -485,6 +504,13 @@ export default function Home() {
         </section>
         </div>
       </main>
+
+      <ScoreEditor
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        abcNotation={abcInput}
+        onSave={(newAbc) => setAbcInput(newAbc)}
+      />
     </div>
   )
 }
