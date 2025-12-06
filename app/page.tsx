@@ -1,9 +1,22 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export default function LandingPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Handle OAuth callback code that lands on home page
+    const code = searchParams.get('code')
+    if (code) {
+      router.replace(`/auth/callback?code=${code}`)
+    }
+  }, [searchParams, router])
+
   return (
     <div className="landing-page">
       <div className="landing-container">
