@@ -147,6 +147,7 @@
 
 .btn-new-project {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -164,12 +165,17 @@
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   line-height: 1;
+  white-space: nowrap;
 }
 
 .btn-new-project svg {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
+}
+
+.btn-new-project span {
+  line-height: 1;
 }
 
 .btn-new-project:hover {
@@ -207,8 +213,28 @@
   color: var(--text-secondary);
 }
 
-.empty-projects .btn-new-project {
-  padding: 12px 20px;
+.btn-create-first {
+  display: inline-block;
+  padding: 14px 28px;
+  background: #111827;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.btn-create-first:hover {
+  background: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .try-editor-link {
