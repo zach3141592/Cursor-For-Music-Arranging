@@ -1393,6 +1393,14 @@ html, body {
   cursor: not-allowed;
 }
 
+.btn-save.saved {
+  background: var(--success);
+}
+
+.btn-save.error {
+  background: var(--error);
+}
+
 .btn-dashboard,
 .btn-login {
   background: transparent;
@@ -1404,16 +1412,6 @@ html, body {
 .btn-login:hover {
   border-color: var(--accent);
   color: var(--accent);
-}
-
-.unsaved-indicator {
-  color: var(--warning);
-  font-size: 12px;
-  font-weight: 500;
-  margin-left: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
 }
 
 /* Save Modal */

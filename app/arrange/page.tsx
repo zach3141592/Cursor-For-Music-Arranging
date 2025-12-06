@@ -39,6 +39,7 @@ export default function Home() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
 
@@ -94,10 +95,39 @@ export default function Home() {
   useEffect(() => {
     if (currentProject && abcInput !== currentProject.abc_notation) {
       setHasUnsavedChanges(true)
+      // Reset saved status when user makes new changes
+      if (autoSaveStatus === 'saved') {
+        setAutoSaveStatus('idle')
+      }
     } else {
       setHasUnsavedChanges(false)
     }
   }, [abcInput, currentProject])
+
+  // Autosave with 4-second debounce
+  useEffect(() => {
+    // Only autosave if: logged in, has project, and has unsaved changes
+    if (!user || !currentProject || !hasUnsavedChanges) return
+
+    const timer = setTimeout(async () => {
+      setAutoSaveStatus('saving')
+      const { error } = await supabase
+        .from('projects')
+        .update({ abc_notation: abcInput })
+        .eq('id', currentProject.id)
+
+      if (error) {
+        setAutoSaveStatus('error')
+        setTimeout(() => setAutoSaveStatus('idle'), 3000)
+      } else {
+        setAutoSaveStatus('saved')
+        setCurrentProject({ ...currentProject, abc_notation: abcInput })
+        setHasUnsavedChanges(false)
+      }
+    }, 4000)
+
+    return () => clearTimeout(timer)
+  }, [abcInput, user, currentProject?.id, hasUnsavedChanges])
 
   // Save project function
   const saveProject = async () => {
@@ -112,6 +142,7 @@ export default function Home() {
     if (!error) {
       setCurrentProject({ ...currentProject, abc_notation: abcInput })
       setHasUnsavedChanges(false)
+      setAutoSaveStatus('saved')
       showStatus('success', 'Project saved!')
     } else {
       showStatus('error', 'Failed to save project')
@@ -705,18 +736,17 @@ export default function Home() {
             />
           </Link>
           <h1>{currentProject ? currentProject.name : 'TunesForm AI'}</h1>
-          {hasUnsavedChanges && <span className="unsaved-indicator">* unsaved changes</span>}
         </div>
         <div className="header-right">
           {user ? (
             <>
               {currentProject ? (
                 <button
-                  className="btn-save"
+                  className={`btn-save ${!hasUnsavedChanges ? 'saved' : ''} ${autoSaveStatus === 'error' ? 'error' : ''}`}
                   onClick={saveProject}
-                  disabled={isSaving || !hasUnsavedChanges}
+                  disabled={isSaving || autoSaveStatus === 'saving' || !hasUnsavedChanges}
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving || autoSaveStatus === 'saving' ? 'Saving...' : autoSaveStatus === 'error' ? 'Save failed' : !hasUnsavedChanges ? 'Saved' : 'Save'}
                 </button>
               ) : (
                 <button
