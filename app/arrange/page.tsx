@@ -705,7 +705,7 @@ export default function Home() {
             />
           </Link>
           <h1>{currentProject ? currentProject.name : 'TunesForm AI'}</h1>
-          {hasUnsavedChanges && <span className="unsaved-indicator">*</span>}
+          {hasUnsavedChanges && <span className="unsaved-indicator">* unsaved changes</span>}
         </div>
         <div className="header-right">
           {user ? (
