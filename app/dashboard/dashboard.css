@@ -1,6 +1,7 @@
 /* Dashboard Layout */
 .dashboard {
   min-height: 100vh;
+  width: 100%;
   background-color: #ffffff;
   background-image:
     radial-gradient(rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px),
@@ -53,9 +54,11 @@
 }
 
 .dashboard-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 48px 32px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 48px 80px;
+  box-sizing: border-box;
 }
 
 .user-email {
@@ -124,6 +127,7 @@
   margin-bottom: 40px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--border);
+  width: 100%;
 }
 
 .projects-header h2 {
@@ -251,10 +255,42 @@
   color: var(--accent);
 }
 
+.projects-container {
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  padding-right: 8px;
+  padding-top: 16px;
+  width: 100%;
+}
+
+.projects-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.projects-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.projects-container::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.projects-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .project-card {
@@ -265,6 +301,8 @@
   overflow: hidden;
   transition: all 0.25s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  min-width: 0;
 }
 
 .project-card:hover {

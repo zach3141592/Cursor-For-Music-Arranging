@@ -190,42 +190,44 @@ K:C
             </Link>
           </div>
         ) : (
-          <div className="projects-grid">
-            {projects.map((project) => (
-              <div key={project.id} className="project-card">
-                <Link href={`/arrange?project=${project.id}`} className="project-link">
-                  <div className="project-preview">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M9 19V6l12-3v13" />
-                      <circle cx="6" cy="18" r="3" />
-                      <circle cx="18" cy="16" r="3" />
-                    </svg>
-                  </div>
-                  <div className="project-info">
-                    <h3>{project.name}</h3>
-                    <p>Updated {formatDate(project.updated_at)}</p>
-                  </div>
-                </Link>
-                <button
-                  className="btn-delete"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    deleteProject(project.id)
-                  }}
-                  disabled={deletingId === project.id}
-                  title="Delete project"
-                >
-                  {deletingId === project.id ? (
-                    <span className="loading-spinner-small" />
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            ))}
+          <div className="projects-container">
+            <div className="projects-grid">
+              {projects.map((project) => (
+                <div key={project.id} className="project-card">
+                  <Link href={`/arrange?project=${project.id}`} className="project-link">
+                    <div className="project-preview">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M9 19V6l12-3v13" />
+                        <circle cx="6" cy="18" r="3" />
+                        <circle cx="18" cy="16" r="3" />
+                      </svg>
+                    </div>
+                    <div className="project-info">
+                      <h3>{project.name}</h3>
+                      <p>Updated {formatDate(project.updated_at)}</p>
+                    </div>
+                  </Link>
+                  <button
+                    className="btn-delete"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      deleteProject(project.id)
+                    }}
+                    disabled={deletingId === project.id}
+                    title="Delete project"
+                  >
+                    {deletingId === project.id ? (
+                      <span className="loading-spinner-small" />
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
