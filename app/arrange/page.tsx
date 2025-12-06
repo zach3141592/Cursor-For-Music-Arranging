@@ -2,9 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { jsPDF } from 'jspdf'
 import { preprocessImage } from '../lib/imagePreprocessing'
 import ScoreEditor, { SelectedTool } from '../components/ScoreEditor'
+import { createClient } from '../lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
+import type { Project } from '../lib/types'
 
 declare global {
   interface Window {
@@ -26,6 +31,17 @@ interface ChatMessage {
 }
 
 export default function Home() {
+  const searchParams = useSearchParams()
+  const projectId = searchParams.get('project')
+  const supabase = createClient()
+
+  const [user, setUser] = useState<User | null>(null)
+  const [currentProject, setCurrentProject] = useState<Project | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+
   const [abcInput, setAbcInput] = useState(defaultABC)
   const [isUploading, setIsUploading] = useState(false)
   const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading', message: string} | null>(null)
@@ -51,6 +67,86 @@ export default function Home() {
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   const [abcjsLoaded, setAbcjsLoaded] = useState(false)
+
+  // Load user and project data
+  useEffect(() => {
+    const loadUserAndProject = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+
+      if (projectId && user) {
+        const { data: project } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .single()
+
+        if (project) {
+          setCurrentProject(project)
+          setAbcInput(project.abc_notation)
+        }
+      }
+    }
+    loadUserAndProject()
+  }, [projectId])
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (currentProject && abcInput !== currentProject.abc_notation) {
+      setHasUnsavedChanges(true)
+    } else {
+      setHasUnsavedChanges(false)
+    }
+  }, [abcInput, currentProject])
+
+  // Save project function
+  const saveProject = async () => {
+    if (!user || !currentProject) return
+
+    setIsSaving(true)
+    const { error } = await supabase
+      .from('projects')
+      .update({ abc_notation: abcInput })
+      .eq('id', currentProject.id)
+
+    if (!error) {
+      setCurrentProject({ ...currentProject, abc_notation: abcInput })
+      setHasUnsavedChanges(false)
+      showStatus('success', 'Project saved!')
+    } else {
+      showStatus('error', 'Failed to save project')
+    }
+    setIsSaving(false)
+  }
+
+  // Save as new project
+  const saveAsNewProject = async (name: string) => {
+    if (!user || !name.trim()) return
+
+    setIsSaving(true)
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
+        name: name.trim(),
+        abc_notation: abcInput,
+        user_id: user.id,
+      })
+      .select()
+      .single()
+
+    if (!error && data) {
+      setCurrentProject(data)
+      setHasUnsavedChanges(false)
+      setShowSaveModal(false)
+      setNewProjectName('')
+      showStatus('success', 'Project created!')
+      // Update URL to include project ID
+      window.history.replaceState({}, '', `/arrange?project=${data.id}`)
+    } else {
+      showStatus('error', 'Failed to create project')
+    }
+    setIsSaving(false)
+  }
 
   useEffect(() => {
     // Load abcjs from CDN
@@ -598,23 +694,80 @@ export default function Home() {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-left">
-          <Image
-            src="/logo.png"
-            alt="TuneForm AI Logo"
-            width={32}
-            height={32}
-            className="dashboard-logo"
-            priority
-          />
-          <h1>TunesForm AI</h1>
+          <Link href={user ? '/dashboard' : '/'}>
+            <Image
+              src="/logo.png"
+              alt="TuneForm AI Logo"
+              width={32}
+              height={32}
+              className="dashboard-logo"
+              priority
+            />
+          </Link>
+          <h1>{currentProject ? currentProject.name : 'TunesForm AI'}</h1>
+          {hasUnsavedChanges && <span className="unsaved-indicator">*</span>}
         </div>
         <div className="header-right">
+          {user ? (
+            <>
+              {currentProject ? (
+                <button
+                  className="btn-save"
+                  onClick={saveProject}
+                  disabled={isSaving || !hasUnsavedChanges}
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              ) : (
+                <button
+                  className="btn-save"
+                  onClick={() => setShowSaveModal(true)}
+                >
+                  Save as Project
+                </button>
+              )}
+              <Link href="/dashboard" className="btn-dashboard">
+                Dashboard
+              </Link>
+            </>
+          ) : (
+            <Link href="/login" className="btn-login">
+              Sign In
+            </Link>
+          )}
           <div className="system-status">
             <div className="status-dot"></div>
             <span>SYSTEMS OPERATIONAL</span>
           </div>
         </div>
       </header>
+
+      {showSaveModal && (
+        <div className="save-modal-overlay">
+          <div className="save-modal">
+            <h3>Save as New Project</h3>
+            <input
+              type="text"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              placeholder="Project name"
+              autoFocus
+            />
+            <div className="save-modal-actions">
+              <button onClick={() => setShowSaveModal(false)} className="btn-cancel">
+                Cancel
+              </button>
+              <button
+                onClick={() => saveAsNewProject(newProjectName)}
+                disabled={isSaving || !newProjectName.trim()}
+                className="btn-create"
+              >
+                {isSaving ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {status && (
         <div className={`dashboard-status ${status.type}`}>

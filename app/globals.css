@@ -1361,3 +1361,149 @@ html, body {
 .score-render svg text:hover {
   filter: brightness(0.6);
 }
+
+/* Auth & Project Buttons */
+.btn-save,
+.btn-dashboard,
+.btn-login {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-save {
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-dashboard,
+.btn-login {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.btn-dashboard:hover,
+.btn-login:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.unsaved-indicator {
+  color: var(--warning);
+  font-size: 18px;
+  margin-left: 4px;
+}
+
+/* Save Modal */
+.save-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.save-modal {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.save-modal h3 {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 24px 0;
+}
+
+.save-modal input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.save-modal input:focus {
+  border-color: var(--accent);
+}
+
+.save-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.save-modal-actions .btn-cancel {
+  padding: 12px 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.save-modal-actions .btn-cancel:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.save-modal-actions .btn-create {
+  padding: 12px 24px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.save-modal-actions .btn-create:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.save-modal-actions .btn-create:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
