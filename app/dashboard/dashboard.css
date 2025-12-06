@@ -410,7 +410,9 @@
 }
 
 .new-project-form input:focus {
-  border-color: var(--accent);
+  border-color: #111827;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.1);
 }
 
 .modal-actions {
@@ -441,10 +443,10 @@
 
 .btn-create {
   padding: 12px 24px;
-  background: var(--accent);
+  background: #111827;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
@@ -455,7 +457,7 @@
 }
 
 .btn-create:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: #000000;
 }
 
 .btn-create:disabled {
