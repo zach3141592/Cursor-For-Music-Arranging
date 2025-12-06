@@ -58,7 +58,7 @@ T:${newProjectName.trim()}
 M:4/4
 L:1/4
 K:C
-|C D E F|G A B c|`,
+|z4|z4|z4|z4|z4|z4|z4|z4|`,
         user_id: user?.id,
       })
       .select()
