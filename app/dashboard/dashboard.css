@@ -1,3 +1,14 @@
+/* Dashboard Layout */
+.dashboard {
+  min-height: 100vh;
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px),
+    radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px, 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
 .dashboard-loading {
   min-height: 100vh;
   display: flex;
@@ -10,6 +21,12 @@
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px),
+    radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px, 16px 16px;
+  background-position: 0 0, 8px 8px;
 }
 
 .loading-spinner {
@@ -38,13 +55,17 @@
 .dashboard-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 48px 32px;
 }
 
 .user-email {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
+  padding: 6px 12px;
+  background: var(--surface);
+  border-radius: 20px;
+  border: 1px solid var(--border);
 }
 
 .btn-signout {
@@ -68,71 +89,146 @@
   background: rgba(220, 38, 38, 0.05);
 }
 
+/* Override dashboard header styles for this page */
+.dashboard .dashboard-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.dashboard .dashboard-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.3;
+}
+
+.dashboard .dashboard-header h1 {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
 .projects-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  gap: 40px;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
 }
 
 .projects-header h2 {
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 700;
   margin: 0;
-}
-
-.btn-new-project {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: var(--accent);
+}
+
+.projects-header h2::before {
+  content: '//';
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.btn-new-project {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #111827;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  line-height: 1;
+}
+
+.btn-new-project svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
 }
 
 .btn-new-project:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
+  background: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .empty-projects {
   text-align: center;
-  padding: 80px 20px;
-  color: var(--text-tertiary);
+  padding: 100px 40px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  margin-top: 20px;
 }
 
 .empty-projects svg {
-  margin-bottom: 24px;
-  opacity: 0.5;
+  margin-bottom: 28px;
+  color: var(--accent);
+  opacity: 0.4;
 }
 
 .empty-projects h3 {
   font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: var(--text-secondary);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: var(--text);
 }
 
 .empty-projects p {
   font-size: 14px;
-  margin: 0 0 24px 0;
+  margin: 0 0 32px 0;
+  color: var(--text-secondary);
+}
+
+.empty-projects .btn-new-project {
+  padding: 12px 20px;
+}
+
+.try-editor-link {
+  display: block;
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.try-editor-link:hover {
+  color: var(--accent);
 }
 
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
 }
 
 .project-card {
@@ -141,13 +237,14 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .project-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+  transform: translateY(-4px);
 }
 
 .project-link {
@@ -157,31 +254,59 @@
 }
 
 .project-preview {
-  height: 120px;
-  background: var(--surface);
+  height: 140px;
+  background: linear-gradient(135deg, var(--surface) 0%, #f1f5f9 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid var(--border);
-  color: var(--text-tertiary);
+  color: var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-preview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.project-preview svg {
+  opacity: 0.3;
+  transition: all 0.25s ease;
+}
+
+.project-card:hover .project-preview svg {
+  opacity: 0.6;
+  transform: scale(1.1);
 }
 
 .project-info {
-  padding: 16px;
+  padding: 20px;
 }
 
 .project-info h3 {
   font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
   color: var(--text);
 }
 
 .project-info p {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text-tertiary);
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .btn-delete {

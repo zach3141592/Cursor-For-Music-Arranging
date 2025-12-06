@@ -172,19 +172,26 @@ K:C
 
         {projects.length === 0 ? (
           <div className="empty-projects">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
               <path d="M9 19V6l12-3v13" />
               <circle cx="6" cy="18" r="3" />
               <circle cx="18" cy="16" r="3" />
             </svg>
             <h3>No projects yet</h3>
-            <p>Create your first project to start arranging music</p>
+            <p>Create your first project to start arranging music with AI</p>
             <button
               className="btn-new-project"
               onClick={() => setShowNewProject(true)}
             >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
               Create First Project
             </button>
+            <Link href="/arrange" className="try-editor-link">
+              or try the editor without saving
+            </Link>
           </div>
         ) : (
           <div className="projects-grid">
